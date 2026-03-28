@@ -1,0 +1,85 @@
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+*.iml
+*.iws
+*.ipr
+.gradle
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+vendor/bundle/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Build outputs
+dist/
+build/
+target/
+out/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Packages
+*.gem
+*.jar
+*.war
+Gemfile.lock
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets and keys
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# macOS specific
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+
+# Testing
+coverage/
+.nyc_output/
+pytest_cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
