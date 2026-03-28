@@ -83,3 +83,4 @@ pytest_cache/
 tmp/
 temp/
 *.tmp
+aidlc-docs/
