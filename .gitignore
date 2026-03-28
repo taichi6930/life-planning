@@ -83,4 +83,6 @@ pytest_cache/
 tmp/
 temp/
 *.tmp
+
+# AI-DLC Documentation (managed separately in life-planning-docs)
 aidlc-docs/
