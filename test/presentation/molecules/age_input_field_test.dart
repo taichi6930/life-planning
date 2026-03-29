@@ -7,7 +7,7 @@ void main() {
     testWidgets('AgeInputField displays label and hint',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: AgeInputField(
               label: '現在の年齢',

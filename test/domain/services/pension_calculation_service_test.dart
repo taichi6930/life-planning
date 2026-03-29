@@ -200,8 +200,8 @@ void main() {
 
       // 有効月数 = 300 + (60 × 1/2) + (60 × 5/8) + (40 × 3/4) + (20 × 7/8)
       //         = 300 + 30 + 37.5 + 30 + 17.5 = 415
-      final effectiveMonths = 415.0;
-      final expectedMonthly = 70608.0 * (effectiveMonths / 480);
+      const effectiveMonths = 415.0;
+      const expectedMonthly = 70608.0 * (effectiveMonths / 480);
       expect(result.basicPensionMonthly, closeTo(expectedMonthly, 1.0));
     });
 
@@ -306,7 +306,7 @@ void main() {
       // 配偶者加給：19,175
       // 子2人（第1・2子）：6,391.67 × 2 = 12,783.34
       // 合計加給：19,175 + 12,783.34 = 31,958.34
-      final expectedSupplementMonthly = 
+      const expectedSupplementMonthly = 
           OccupationalPensionInput.spousalSupplementMonthly + 
           (OccupationalPensionInput.childSupplementFirst2ndMonthly * 2);
       
@@ -326,7 +326,7 @@ void main() {
 
       // 子3人：第1・2子 + 第3子
       // = 6,391.67 × 2 + 2,133.33 × 1 = 14,916.67
-      final expectedChildSupplementMonthly = 
+      const expectedChildSupplementMonthly = 
           (OccupationalPensionInput.childSupplementFirst2ndMonthly * 2) + 
           OccupationalPensionInput.childSupplementThirdMonthly;
       
