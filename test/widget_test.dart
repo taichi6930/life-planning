@@ -7,7 +7,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:life_planning/app_widget.dart';
 
 void main() {

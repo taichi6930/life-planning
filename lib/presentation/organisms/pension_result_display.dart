@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../molecules/pension_age_chart.dart';
 import '../molecules/result_card.dart';
+import '../providers/pension_provider.dart';
 
 /// 計算結果表示 Organism
 /// 
-/// Molecules: ResultCard を使用して、計算結果を表示
-class PensionResultDisplay extends StatelessWidget {
+/// Molecules: ResultCard、PensionAgeChart を使用して、計算結果を表示
+class PensionResultDisplay extends ConsumerWidget {
   final String? nationalPensionYearly;
   final String? nationalPensionMonthly;
   final double? contributionRate;
@@ -25,7 +28,9 @@ class PensionResultDisplay extends StatelessWidget {
       contributionRate != null;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chartData = ref.watch(pensionByAgeChartProvider);
+
     if (isLoading) {
       return const Center(
         child: Padding(
@@ -76,6 +81,12 @@ class PensionResultDisplay extends StatelessWidget {
                     ? '${(contributionRate! * 100).toStringAsFixed(1)}%'
                     : '-',
               },
+            ),
+            const SizedBox(height: 24),
+            // グラフを追加
+            PensionAgeChart(
+              data: chartData,
+              isLoading: isLoading,
             ),
           ],
         ),

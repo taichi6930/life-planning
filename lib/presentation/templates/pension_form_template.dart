@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../organisms/pension_form.dart';
 import '../organisms/pension_result_display.dart';
 import '../providers/pension_provider.dart';
+import '../utils/pension_storage.dart';
 
 /// 年金計算ページのテンプレート
 /// 
 /// フォーム入力と結果表示を組み合わせたレイアウト
-class PensionFormTemplate extends ConsumerWidget {
+class PensionFormTemplate extends ConsumerStatefulWidget {
   final String title;
 
   const PensionFormTemplate({
@@ -16,7 +17,44 @@ class PensionFormTemplate extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PensionFormTemplate> createState() => _PensionFormTemplateState();
+}
+
+class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedData();
+  }
+
+  /// localStorageから保存されたデータを読み込んで復元
+  Future<void> _loadSavedData() async {
+    final savedData = await PensionStorage.loadPensionFormData();
+    
+    if (!mounted) return;
+    
+    final notifier = ref.read(pensionFormNotifierProvider.notifier);
+    
+    if (savedData.currentAge != null) {
+      notifier.setCurrentAge(savedData.currentAge!);
+    }
+    if (savedData.paymentMonths != null) {
+      notifier.setPaymentMonths(savedData.paymentMonths!);
+    }
+    if (savedData.occupationalPaymentMonths != null) {
+      notifier.setOccupationalPaymentMonths(savedData.occupationalPaymentMonths!);
+    }
+    if (savedData.monthlySalary != null) {
+      notifier.setMonthlySalary(savedData.monthlySalary!);
+    }
+    if (savedData.bonus != null) {
+      notifier.setBonus(savedData.bonus!);
+    }
+    notifier.setDesiredPensionStartAge(savedData.desiredPensionStartAge);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final formState = ref.watch(pensionFormNotifierProvider);
     final yearlyPension = ref.watch(nationalPensionYearlyProvider);
     final monthlyPension = ref.watch(nationalPensionMonthlyProvider);
@@ -29,7 +67,7 @@ class PensionFormTemplate extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(title),
+            title: Text(widget.title),
             elevation: 0,
           ),
           body: isWideScreen
@@ -56,7 +94,20 @@ class PensionFormTemplate extends ConsumerWidget {
             color: Colors.grey[50],
             child: PensionForm(
               isLoading: formState.isLoading,
-              onSubmit: (age, months) {
+              initialAge: formState.currentAge,
+              initialPaymentMonths: formState.paymentMonths,
+              initialOccupationalPaymentMonths: formState.occupationalPaymentMonths,
+              initialMonthlySalary: formState.monthlySalary ?? 0,
+              initialBonus: formState.bonus ?? 0,
+              initialDesiredPensionStartAge: formState.desiredPensionStartAge,
+              onSubmit: (currentAge, paymentMonths, occupationalPaymentMonths, monthlySalary, bonus, desiredPensionStartAge) {
+                // Template で計算を管理
+                ref.read(pensionFormNotifierProvider.notifier).setCurrentAge(currentAge);
+                ref.read(pensionFormNotifierProvider.notifier).setPaymentMonths(paymentMonths);
+                ref.read(pensionFormNotifierProvider.notifier).setOccupationalPaymentMonths(occupationalPaymentMonths);
+                ref.read(pensionFormNotifierProvider.notifier).setMonthlySalary(monthlySalary);
+                ref.read(pensionFormNotifierProvider.notifier).setBonus(bonus);
+                ref.read(pensionFormNotifierProvider.notifier).setDesiredPensionStartAge(desiredPensionStartAge);
                 ref.read(pensionFormNotifierProvider.notifier).calculatePension();
               },
             ),
@@ -97,7 +148,20 @@ class PensionFormTemplate extends ConsumerWidget {
             // フォームタブ
             PensionForm(
               isLoading: formState.isLoading,
-              onSubmit: (age, months) {
+              initialAge: formState.currentAge,
+              initialPaymentMonths: formState.paymentMonths,
+              initialOccupationalPaymentMonths: formState.occupationalPaymentMonths,
+              initialMonthlySalary: formState.monthlySalary ?? 0,
+              initialBonus: formState.bonus ?? 0,
+              initialDesiredPensionStartAge: formState.desiredPensionStartAge,
+              onSubmit: (currentAge, paymentMonths, occupationalPaymentMonths, monthlySalary, bonus, desiredPensionStartAge) {
+                // Template で計算を管理
+                ref.read(pensionFormNotifierProvider.notifier).setCurrentAge(currentAge);
+                ref.read(pensionFormNotifierProvider.notifier).setPaymentMonths(paymentMonths);
+                ref.read(pensionFormNotifierProvider.notifier).setOccupationalPaymentMonths(occupationalPaymentMonths);
+                ref.read(pensionFormNotifierProvider.notifier).setMonthlySalary(monthlySalary);
+                ref.read(pensionFormNotifierProvider.notifier).setBonus(bonus);
+                ref.read(pensionFormNotifierProvider.notifier).setDesiredPensionStartAge(desiredPensionStartAge);
                 ref.read(pensionFormNotifierProvider.notifier).calculatePension();
               },
             ),

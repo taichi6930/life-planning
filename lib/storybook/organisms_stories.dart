@@ -14,10 +14,10 @@ List<Story> organismsStories() => [
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
           child: PensionForm(
-            onSubmit: (age, months) {
+            onSubmit: (age, months, occupationalMonths, salary, bonus, pensionStartAge) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('計算開始: 年齢=$age, 納付月数=$months'),
+                  content: Text('計算開始: 年齢=$age, 納付月数=$months, 厚生年金月数=$occupationalMonths, 給与=$salary, 賞与=$bonus, 受給開始年齢=$pensionStartAge'),
                 ),
               );
             },
@@ -34,7 +34,7 @@ List<Story> organismsStories() => [
         child: SingleChildScrollView(
           child: PensionForm(
             isLoading: true,
-            onSubmit: (age, months) {},
+            onSubmit: (age, months, occupationalMonths, salary, bonus, pensionStartAge) {},
           ),
         ),
       ),

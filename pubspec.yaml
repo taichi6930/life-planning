@@ -26,6 +26,12 @@ dependencies:
   
   # Logging
   logger: ^2.7.0
+  
+  # Charts
+  fl_chart: ^0.70.0
+  
+  # Local Storage
+  shared_preferences: ^2.2.0
 
 dev_dependencies:
   flutter_test:

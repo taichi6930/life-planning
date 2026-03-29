@@ -1,8 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:life_planning/presentation/providers/pension_provider.dart';
 
 void main() {
+  // Setup for shared_preferences in tests
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('PensionFormNotifier Tests', () {
     test('初期状態は全てnull', () {
       final container = ProviderContainer();
