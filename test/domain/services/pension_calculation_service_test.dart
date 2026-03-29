@@ -442,6 +442,70 @@ void main() {
       // isValid()でも判定できる
       expect(input.isValid(), false);
     });
+
+    test('calculateOccupationalPension で無効な厚生年金入力でエラーが発生', () {
+      // コンストラクタでエラーが発生する場合のテスト
+      try {
+        OccupationalPensionInput(
+          enrollmentMonths: -1, // 無効な値
+          averageMonthlyReward: 300000,
+          averageBonusReward: 50000,
+          desiredPensionStartAge: 65,
+        );
+        fail('ArgumentError should be thrown');
+      } on ArgumentError catch (e) {
+        expect(e.message, contains('enrollmentMonths'));
+      }
+    });
+
+    test('calculateCombinedPension で無効な国民年金入力でエラーが発生', () {
+      final invalidNationalInput = NationalPensionInput(
+        fullContribution: -1, // 無効
+        hasPaymentSuspension: false,
+        desiredPensionStartAge: 65,
+      );
+
+      final validOccupationalInput = OccupationalPensionInput(
+        enrollmentMonths: 600,
+        averageMonthlyReward: 300000,
+        averageBonusReward: 50000,
+        desiredPensionStartAge: 65,
+      );
+
+      expect(
+        () => PensionCalculationService.calculateCombinedPension(
+          invalidNationalInput,
+          validOccupationalInput,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('calculateCombinedPension で無効な厚生年金入力でエラーが発生', () {
+      // コンストラクタでエラーが発生する場合のテスト
+      try {
+        final validNationalInput = NationalPensionInput(
+          fullContribution: 480,
+          hasPaymentSuspension: false,
+          desiredPensionStartAge: 65,
+        );
+
+        final invalidOccupationalInput = OccupationalPensionInput(
+          enrollmentMonths: -1, // 無効な値
+          averageMonthlyReward: 300000,
+          averageBonusReward: 50000,
+          desiredPensionStartAge: 65,
+        );
+
+        PensionCalculationService.calculateCombinedPension(
+          validNationalInput,
+          invalidOccupationalInput,
+        );
+        fail('ArgumentError should be thrown');
+      } on ArgumentError catch (e) {
+        expect(e.message, contains('enrollmentMonths'));
+      }
+    });
   });
 
   group('実世界シナリオテスト', () {

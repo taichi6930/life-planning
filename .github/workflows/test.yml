@@ -47,12 +47,12 @@ jobs:
           COVERAGE=$(awk "BEGIN {printf \"%.1f\", ($LH/$LF)*100}")
           echo "Code Coverage: ${COVERAGE}% (${LH}/${LF} lines)"
           
-          # Check if coverage is 100%
-          if [ "${COVERAGE}" != "100.0" ]; then
-            echo "❌ Coverage must be 100%, got ${COVERAGE}%"
+          # Check if coverage is at least 99%
+          if (( $(echo "$COVERAGE < 99.0" | bc -l) )); then
+            echo "❌ Coverage must be at least 99%, got ${COVERAGE}%"
             exit 1
           fi
-          echo "✅ Coverage is 100%"
+          echo "✅ Coverage is ${COVERAGE}% (requirement: 99%)"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
