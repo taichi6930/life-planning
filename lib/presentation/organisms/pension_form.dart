@@ -13,10 +13,10 @@ class PensionForm extends StatefulWidget {
   final bool isLoading;
 
   const PensionForm({
-    Key? key,
+    super.key,
     this.onSubmit,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   State<PensionForm> createState() => _PensionFormState();

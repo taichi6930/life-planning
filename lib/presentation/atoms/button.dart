@@ -11,13 +11,13 @@ class Button extends StatelessWidget {
   final ButtonSize size;
 
   const Button({
-    Key? key,
+    super.key,
     required this.label,
     this.onPressed,
     this.isLoading = false,
     this.variant = ButtonVariant.primary,
     this.size = ButtonSize.medium,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

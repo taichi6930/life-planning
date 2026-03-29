@@ -6,7 +6,7 @@ import '../templates/pension_form_template.dart';
 /// 
 /// PensionFormTemplate をラップした実際のページコンポーネント
 class PensionCalculationPage extends StatelessWidget {
-  const PensionCalculationPage({Key? key}) : super(key: key);
+  const PensionCalculationPage({super.key});
 
   @override
   Widget build(BuildContext context) {

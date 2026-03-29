@@ -12,12 +12,12 @@ class ResultCard extends StatelessWidget {
   final bool isHighlight;
 
   const ResultCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.results,
     this.units,
     this.isHighlight = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

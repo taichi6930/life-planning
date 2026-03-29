@@ -11,9 +11,9 @@ class PensionFormTemplate extends ConsumerWidget {
   final String title;
 
   const PensionFormTemplate({
-    Key? key,
+    super.key,
     this.title = '年金計算',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

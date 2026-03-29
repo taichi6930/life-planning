@@ -14,13 +14,13 @@ class PaymentMonthsInputField extends StatefulWidget {
   final int maxMonths;
 
   const PaymentMonthsInputField({
-    Key? key,
+    super.key,
     this.label = '年金納付月数',
     this.hintText = '例: 360',
     this.onChanged,
     this.controller,
     this.maxMonths = 480,
-  }) : super(key: key);
+  });
 
   @override
   State<PaymentMonthsInputField> createState() =>

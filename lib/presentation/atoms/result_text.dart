@@ -11,13 +11,13 @@ class ResultText extends StatelessWidget {
   final bool isHighlight;
 
   const ResultText({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
     this.unit,
     this.size = ResultTextSize.medium,
     this.isHighlight = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

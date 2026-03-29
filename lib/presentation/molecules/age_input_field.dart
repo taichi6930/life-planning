@@ -13,12 +13,12 @@ class AgeInputField extends StatefulWidget {
   final TextEditingController? controller;
 
   const AgeInputField({
-    Key? key,
+    super.key,
     this.label = '年齢',
     this.hintText = '例: 30',
     this.onChanged,
     this.controller,
-  }) : super(key: key);
+  });
 
   @override
   State<AgeInputField> createState() => _AgeInputFieldState();

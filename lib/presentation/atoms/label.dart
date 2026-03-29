@@ -12,12 +12,12 @@ class Label extends StatelessWidget {
 
   const Label(
     this.text, {
-    Key? key,
+    super.key,
     this.size = LabelSize.medium,
     this.color = LabelColor.primary,
     this.textAlign = TextAlign.left,
     this.maxLines,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

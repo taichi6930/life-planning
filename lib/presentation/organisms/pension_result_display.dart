@@ -12,12 +12,12 @@ class PensionResultDisplay extends StatelessWidget {
   final bool isLoading;
 
   const PensionResultDisplay({
-    Key? key,
+    super.key,
     this.nationalPensionYearly,
     this.nationalPensionMonthly,
     this.contributionRate,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   bool get _hasResults =>
       nationalPensionYearly != null ||
