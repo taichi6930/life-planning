@@ -1,6 +1,99 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_planning/domain/values/national_pension_input.dart';
 
+/// ## デシジョンテーブル（NationalPensionInput テストスイート）
+///
+/// 国民年金計算入力の検証ロジックを複数の条件組み合わせで網羅的にテスト
+///
+/// ### A. 基本フィールド検証（fullContribution / exemption fields）
+///
+/// | No | fullContribution | exemptionFields | 期待される動作                     |
+/// |----|-----------------|-----------------|----------------------------------|
+/// | A1 | 0               | 全て 0          | isValid() = true（最小有効）      |
+/// | A2 | -1              | 0               | isValid() = false（負数検出）     |
+/// | A3 | 480             | 0               | isValid() = true（最大納付）      |
+/// | A4 | 240             | fullExempt=100  | isValid() = true（mixed）        |
+/// | A5 | 240             | fullExempt=-10  | isValid() = false（負の免除）     |
+/// | A6 | 300             | fullExempt=-1   | isValid() = false（セキュリティ）|
+///
+/// ### B. 有効納付月数計算（effectiveContributionMonths）
+///
+/// | No | fullContribution | fullExempt | threeQuarter | half  | quarter | studentDeferment | 期待値                      |
+/// |----|-----------------|------------|-------------|-------|---------|------------------|---------------------------|
+/// | B1 | 0               | 0          | 0           | 0     | 0       | 0                | 0.0                       |
+/// | B2 | 100             | 0          | 0           | 0     | 0       | 0                | 100.0（フル納付のみ）       |
+/// | B3 | 0               | 100        | 0           | 0     | 0       | 0                | 50.0（100 × 1/2）          |
+/// | B4 | 0               | 0          | 100         | 0     | 0       | 0                | 62.5（100 × 5/8）          |
+/// | B5 | 0               | 0          | 0           | 100   | 0       | 0                | 75.0（100 × 3/4）          |
+/// | B6 | 0               | 0          | 0           | 0     | 100     | 0                | 87.5（100 × 7/8）          |
+/// | B7 | 240             | 100        | 0           | 0     | 0       | 0                | 290.0（混合計算）           |
+/// | B8 | 300             | 80         | 80          | 80    | 40      | 0                | 385.0（全タイプ混合）       |
+/// | B9 | 240             | 100        | 0           | 0     | 0       | 48               | 290.0（studentDeferment非計上）|
+///
+/// ### C. isValid() 複合条件（年齢 × 有効月数）
+///
+/// | No | age | effective | 期待される動作                    |
+/// |----|-----|-----------|----------------------------------|
+/// | C1 | 65  | 0         | true（標準受給、最小納付）        |
+/// | C2 | 65  | 480       | true（標準受給、最大納付）        |
+/// | C3 | 60  | 240       | true（早期受給下限OK）            |
+/// | C4 | 75  | 240       | true（繰下げ受給上限OK）          |
+/// | C5 | 59  | 240       | false（年齢下限未満）             |
+/// | C6 | 76  | 240       | false（年齢上限超過）             |
+/// | C7 | 65  | 481       | false（有効月数超過480月）        |
+/// | C8 | 65  | -1        | false（負の有効月数）             |
+/// | C9 | 60  | 480       | true（早期受給+フル納付）         |
+/// | C10| 75  | 480       | true（繰下げ受給+フル納付）      |
+///
+/// ### D. getPensionAdjustmentRate() 調整率計算（年齢別）
+///
+/// | No | desiredAge | monthsDiff | 計算式（abbreviation）         | 期待値 |
+/// |----|-----------|-----------|------------------------------|--------|
+/// | D1 | 60        | -60       | 1.0 - (0.004 × 60)           | 0.76   |
+/// | D2 | 62        | -36       | 1.0 - (0.004 × 36)           | 0.856  |
+/// | D3 | 64        | -12       | 1.0 - (0.004 × 12)           | 0.952  |
+/// | D4 | 65        | 0         | 1.0（標準受給）                | 1.0    |
+/// | D5 | 66        | 12        | 1.0 + (0.007 × 12)           | 1.084  |
+/// | D6 | 68        | 36        | 1.0 + (0.007 × 36)           | 1.252  |
+/// | D7 | 70        | 60        | 1.0 + (0.007 × 60)           | 1.42   |
+/// | D8 | 75        | 120       | 1.0 + (0.007 × 120)          | 1.84   |
+///
+/// ### E. 境界値テスト（boundary conditions）
+///
+/// | No | テスト対象           | 入力値    | 期待される動作              |
+/// |----|---------------------|---------|---------------------------|
+/// | E1 | fullContribution     | 0       | 有効（下限境界）            |
+/// | E2 | fullContribution     | 480     | 有効（上限境界）            |
+/// | E3 | fullContribution     | 481     | 無効（上限超過）            |
+/// | E4 | desiredPensionStartAge| 60      | 有効（下限境界）            |
+/// | E5 | desiredPensionStartAge| 75      | 有効（上限境界）            |
+/// | E6 | desiredPensionStartAge| 59      | 無効（下限未満）            |
+/// | E7 | desiredPensionStartAge| 76      | 無効（上限超過）            |
+/// | E8 | effectiveContribution| 480     | 有効（上限境界）            |
+/// | E9 | effectiveContribution| 480.1   | 無効（上限超過）            |
+///
+/// ### F. 実践的シナリオ（real-world use cases）
+///
+/// | No | シナリオ             | 組み合わせ条件                              | 期待される動作       |
+/// |----|---------------------|------------------------------------------|------------------|
+/// | F1 | 失業&免除経験        | fullContribution=380, fullExempt=100      | isValid()=true   |
+/// | F2 | 学生期間含む         | fullContribution=432, studentDeferment=48 | effective=432    |
+/// | F3 | 多様な免除タイプ      | 全exemption fieldsを使用                  | 複雑な計算検証    |
+/// | F4 | 限界事例：ちょうど480月 | fullContribution=300, fullExempt=360     | effective=480    |
+/// | F5 | 早期受給シナリオ      | age=60, fullContribution=240              | adjust=0.76      |
+/// | F6 | 繰下げ受給シナリオ    | age=75, fullContribution=240              | adjust=1.84      |
+///
+/// ### G. 負の値セキュリティテスト（negative value security）
+///
+/// | No | フィールド                        | 入力値 | 期待される動作      |
+/// |----|----------------------------------|--------|------------------|
+/// | G1 | fullContribution                 | -1     | isValid()=false   |
+/// | G2 | fullExempt                       | -10    | isValid()=false   |
+/// | G3 | threeQuarterExempt               | -5     | isValid()=false   |
+/// | G4 | halfExempt                       | -20    | isValid()=false   |
+/// | G5 | quarterExempt                    | -5     | isValid()=false   |
+/// | G6 | studentDeferment                 | -20    | isValid()=false   |
+
 void main() {
   group('NationalPensionInput - フィールド検証', () {
     test('全フィールド指定（fullContribution = 0）', () {
