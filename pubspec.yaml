@@ -15,7 +15,11 @@ dependencies:
   get_it: ^7.7.0
   
   # State Management
-  provider: ^6.1.5
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.3.5
+  
+  # Storybook
+  storybook_flutter: ^0.13.0
   
   # Entity & Value Objects
   equatable: ^2.0.8
