@@ -75,15 +75,11 @@ void main() {
 
     testWidgets('AgeInputField rejects negative age',
         (WidgetTester tester) async {
-      int? lastValue;
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: AgeInputField(
-              onChanged: (value) {
-                lastValue = value;
-              },
+              onChanged: (value) {},
             ),
           ),
         ),
@@ -99,15 +95,11 @@ void main() {
 
     testWidgets('AgeInputField rejects non-numeric input',
         (WidgetTester tester) async {
-      int? lastValue;
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: AgeInputField(
-              onChanged: (value) {
-                lastValue = value;
-              },
+              onChanged: (value) {},
             ),
           ),
         ),
