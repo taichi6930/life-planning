@@ -1,0 +1,28 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "life-planning (public)"
+    },
+    {
+      "path": "../life-planning-docs",
+      "name": "life-planning-docs (private)"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": false,
+      "**/.gitignore": false
+    },
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+      "*.md": "*.md.bak"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "eamodio.gitlens",
+      "github.copilot"
+    ]
+  }
+}

@@ -1,0 +1,3 @@
+[submodule "aidlc-docs"]
+	path = aidlc-docs
+	url = https://github.com/taichi6930/life-planning-docs.git
