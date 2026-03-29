@@ -61,24 +61,21 @@ List<Story> atomsStories() => [
     name: 'Atoms/Button - All Sizes',
     builder: (context) => Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Button(
+          const Button(
             label: 'Small',
-            onPressed: () {},
             size: ButtonSize.small,
           ),
           const SizedBox(height: 16),
-          Button(
+          const Button(
             label: 'Medium',
-            onPressed: () {},
             size: ButtonSize.medium,
           ),
           const SizedBox(height: 16),
-          Button(
+          const Button(
             label: 'Large',
-            onPressed: () {},
             size: ButtonSize.large,
           ),
         ],
@@ -125,7 +122,7 @@ List<Story> atomsStories() => [
     name: 'Atoms/Label - Sizes',
     builder: (context) => Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: const Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -151,7 +148,7 @@ List<Story> atomsStories() => [
     name: 'Atoms/Label - Colors',
     builder: (context) => Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: const Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -207,7 +204,7 @@ List<Story> atomsStories() => [
     name: 'Atoms/ResultText - All Sizes',
     builder: (context) => Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ResultText(
