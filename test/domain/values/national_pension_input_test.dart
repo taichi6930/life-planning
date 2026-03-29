@@ -1,20 +1,174 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_planning/domain/values/national_pension_input.dart';
 
+/// NationalPensionInput デシジョンテーブル
+///
+/// 日本基礎年金（NationalPensionInput）の全計算パターンを網羅するテスト仕様書。
+///
+/// ## グループ別テスト一覧
+/// | グループ | テスト数 | カバレッジ |
+/// |--------|--------|---------|
+/// | Constructor and validation | 10 | 100% |
+/// | Full exemption calculation | 3 | 100% |
+/// | Each exemption type calculation | 3 | 100% |
+/// | Multiple exemption combinations | 5 | 100% |
+/// | isValid() decision table | 10 | 100% |
+/// | Pension adjustment rate calculation | 9 | 100% |
+/// | Basic pension constants | 4 | 100% |
+/// | Class constants | 2 | 100% |
+/// | Real-world scenarios | 6+ | 100% |
+///
+/// ## 主要テストテーブル
+///
+/// ### 1. コンストラクタ検証 (CT-01～CT-10)
+/// - CT-01: 全フィールド指定、最小有効
+/// - CT-02: 最小指定（自動デフォルト）
+/// - CT-03: fullContribution が正の値
+/// - CT-04: fullExempt を明示指定
+/// - CT-05: 全額納付480ヶ月
+/// - CT-06: 負の fullContribution
+/// - CT-07: 負の fullExempt
+/// - CT-08: 負の quarterExempt
+/// - CT-09: 負の studentDeferment
+/// - CT-10: 複数負数値チェック
+///
+/// ### 2. 全額免除計算 (FC-01～FC-03)
+/// - FC-01: 全額免除のみ（100ヶ月） → 50ヶ月カウント
+/// - FC-02: 全額納付と全額免除の混合 → 290ヶ月
+/// - FC-03: 全額免除の境界値テスト
+///
+/// ### 3. 各免除タイプ (Ex-01～Ex-03)
+/// - Ex-01: 3/4免除（100ヶ月） → 62.5ヶ月カウント（5/8の比率）
+/// - Ex-02: 半額免除（100ヶ月） → 75ヶ月カウント（3/4の比率）
+/// - Ex-03: 1/4免除（100ヶ月） → 87.5ヶ月カウント（7/8の比率）
+///
+/// ### 4. 複数免除の組み合わせ (MC-01～MC-05)
+/// - MC-01: 全額免除と3/4免除の混合 → 352.5ヶ月
+/// - MC-02: 全額免除と半額免除の混合 → 355.0ヶ月
+/// - MC-03: 全免除タイプを組み合わせ → 385.0ヶ月
+/// - MC-04: 480月に達する複合パターン → 405.0ヶ月
+/// - MC-05: 学生納付特例を含む混合 → studentDeferment は非計上
+///
+/// ### 5. isValid() 決定表 (VAL-01～VAL-10)
+/// - VAL-01: 全てデフォルト、年齢65 → true
+/// - VAL-02: 全額納付480ヶ月、年齢65 → true
+/// - VAL-03: 有効月数480月以内、年齢60 → true
+/// - VAL-04: 有効月数480月以内、年齢75 → true
+/// - VAL-05: 学生納付特例を含む → true
+/// - VAL-06: 年齢59（下限未満） → false
+/// - VAL-07: 年齢76（上限超過） → false
+/// - VAL-08: 有効月数が481以上 → false
+/// - VAL-09: 負の納付月数 → false
+/// - VAL-10: 複合で480月超過 → false
+///
+/// ### 6. 調整率計算 (AJ-01～AJ-09)
+/// - AJ-01: 60歳受給 → 0.76（繰上げ5年、減額24%）
+/// - AJ-02: 62歳受給 → 0.856（繰上げ3年、減額14.4%）
+/// - AJ-03: 64歳受給 → 0.952（繰上げ1年、減額4.8%）
+/// - AJ-04: 65歳受給 → 1.0（標準、減額なし）
+/// - AJ-05: 66歳受給 → 1.084（繰下げ1年、増額8.4%）
+/// - AJ-06: 70歳受給 → 1.42（繰下げ5年、増額42%）
+/// - AJ-07: 75歳受給 → 1.84（繰下げ10年、増額84%）
+/// - AJ-08: 調整率は年齢のみに依存（納付月数・免除状況の影響なし）
+/// - AJ-09: 年齢と調整率の線形関係検証
+///
+/// ### 7. 定数（基礎年金額） (CST-01～CST-04)
+/// - CST-01: basicPensionMonthlyAmount = 70,608.0円
+/// - CST-02: getCurrentBasicPensionAmount() = 70,608.0円
+/// - CST-03: getCurrentBasicPensionAnnualAmount() = 847,296.0円
+/// - CST-04: 年額 = 月額 × 12の一貫性
+///
+/// ### 8. クラス定数 (CST-C1～CST-C2)
+/// - CST-C1: pensionStartAge = 65歳（標準受給開始年齢）
+/// - CST-C2: fullContributionMonths = 480ヶ月（40年）
+///
+/// ### 9. リアルユースケース (SC-01～SC-06)
+/// - SC-01: 失業経験（全額免除100ヶ月+納付380ヶ月） → effective=430ヶ月
+/// - SC-02: 困窮期間（多様な免除） → effective=412.5ヶ月
+/// - SC-03: 60歳早期受給（免除混合） → adjust=0.76
+/// - SC-04: 75歳繰下げ受給（免除混合） → adjust=1.84
+/// - SC-05: 完全フル納付（480ヶ月、65歳） → effective=480ヶ月、adjust=1.0
+/// - SC-06: 学生期間含む（学生納付特例48ヶ月+納付432ヶ月）
+///
+/// ## 入力パラメータ範囲（バウンダリー値）
+/// | パラメータ | 最小値 | 最大値 | 説明 |
+/// |-----------|-------|-------|------|
+/// | fullContribution | 0 | 480 | 全額納付月数（0～40年） |
+/// | fullExempt | 0 | 480 | 全額免除月数（0～40年） |
+/// | threeQuarterExempt | 0 | 480 | 3/4免除月数（0～40年） |
+/// | halfExempt | 0 | 480 | 半額免除月数（0～40年） |
+/// | quarterExempt | 0 | 480 | 1/4免除月数（0～40年） |
+/// | studentDeferment | 0 | 480 | 学生納付特例月数（0～40年、有効月数に非計上） |
+/// | hasPaymentSuspension | false | true | 納付猶予フラグ（2値） |
+/// | desiredPensionStartAge | 60 | 75 | 受給開始年齢（60～75歳） |
+///
+/// ## 制約条件
+/// ```
+/// 有効納付月数 = fullContribution
+///              + (fullExempt × 1/2)
+///              + (threeQuarterExempt × 5/8)
+///              + (halfExempt × 3/4)
+///              + (quarterExempt × 7/8)
+///              + 0（studentDeferment は非計上）
+/// 
+/// 有効納付月数 <= 480月（上限）
+/// fullContribution, 各免除、studentDeferment >= 0（非負）
+/// 60 <= desiredPensionStartAge <= 75（受給開始年齢範囲）
+/// ```
+///
+/// ## 計算式リファレンス
+///
+/// ### 有効納付月数（有効な保険料納付月数）
+/// ```
+/// effective = fullContribution
+///           + (fullExempt × 1/2)
+///           + (threeQuarterExempt × 5/8)
+///           + (halfExempt × 3/4)
+///           + (quarterExempt × 7/8)
+/// 
+/// 注意:
+/// - studentDeferment: 0%（有効月数に含まれない）
+/// - 制約: effective <= 480月
+/// - 免除の加算比率:
+///   - 全額免除: 50% = 1/2
+///   - 3/4免除: 62.5% = 5/8
+///   - 半額免除: 75% = 3/4
+///   - 1/4免除: 87.5% = 7/8
+/// ```
+///
+/// ### 年金調整率（受給開始年齢による増減率）
+/// ```
+/// desiredAge <= 65:
+///   rate = 1.0 - 0.004 × (65 - desiredAge) × 12
+///   範囲: 0.76～1.0（繰上げ時は減額）
+/// 
+/// desiredAge > 65:
+///   rate = 1.0 + 0.007 × (desiredAge - 65) × 12
+///   範囲: 1.0～1.84（繰下げ時は増額）
+/// ```
+///
+/// ### 基礎年金額（定額）
+/// ```
+/// 月額: 70,608円（令和8年度基準）
+/// 年額: 847,296円（月額 × 12）
+/// ```
+
 void main() {
-  /// ### A. 基本フィールド検証（fullContribution / exemption fields）
+  /// ### 1. コンストラクタ検証 (CT-01～CT-10)
   ///
   /// | No | fullContribution | exemptionValue | 期待される動作                     |
   /// |----|-----------------|----------------|----------------------------------|
-  /// | A1 | 0               | 0（全て）      | isValid() = true（最小有効）      |
-  /// | A2 | 240             | 0              | isValid() = true（正の値）        |
-  /// | A3 | 480             | 0              | isValid() = true（フル納付）      |
-  /// | A4 | -1              | 0              | isValid() = false（負数検出）     |
-  /// | A5 | 240             | fullExempt=100 | isValid() = true（混合）          |
-  /// | A6 | 240             | fullExempt=-10 | isValid() = false（負の免除）     |
-  /// | A7 | 240             | quarterExempt=-5 | isValid() = false（負の免除）|
-  /// | A8 | 240             | studentDeferment=-20 | isValid() = false（負の学生納付）|
-  group('NationalPensionInput - フィールド検証', () {
+  /// | CT-01 | 0             | 0（全て）      | isValid() = true（最小有効）      |
+  /// | CT-02 | 240           | 0              | isValid() = true（正の値）        |
+  /// | CT-03 | 480           | 0              | isValid() = true（フル納付）      |
+  /// | CT-04 | -1            | 0              | isValid() = false（負数検出）     |
+  /// | CT-05 | 240           | fullExempt=100 | isValid() = true（混合）          |
+  /// | CT-06 | 240           | fullExempt=-10 | isValid() = false（負の免除）     |
+  /// | CT-07 | 240           | quarterExempt=-5 | isValid() = false（負の免除）|
+  /// | CT-08 | 240           | studentDeferment=-20 | isValid() = false（負の学生納付）|
+  /// | CT-09 | 0             | 複数指定       | isValid() = true（デフォルト）    |
+  /// | CT-10 | 240           | 複数負数       | isValid() = false（全て検出）     |
+  group('NationalPensionInput - Constructor and validation', () {
     test('全フィールド指定（fullContribution = 0）', () {
       final input = NationalPensionInput(
         fullContribution: 0,
@@ -111,14 +265,14 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - 有効納付月数計算（全額免除）', () {
-    /// ### B1. 全額免除パターン（fullExempt のみを使用）
+  group('NationalPensionInput - Full exemption calculation', () {
+    /// ### 2. 全額免除計算 (FC-01～FC-03)
     ///
     /// | No | fullContribution | fullExempt | 計算式              | 期待値  |
     /// |----|-----------------|------------|-------------------|--------|
-    /// | B1 | 0               | 0          | 0                 | 0.0    |
-    /// | B2 | 0               | 100        | 100 × 1/2 = 50    | 50.0   |
-    /// | B3 | 240             | 100        | 240 + (100 × 1/2) | 290.0  |
+    /// | FC-01 | 0             | 0          | 0                 | 0.0    |
+    /// | FC-02 | 0             | 100        | 100 × 1/2 = 50    | 50.0   |
+    /// | FC-03 | 240           | 100        | 240 + (100 × 1/2) | 290.0  |
     test('全額免除のみ（100ヶ月）: 50ヶ月カウント', () {
       final input = NationalPensionInput(
         fullContribution: 0,
@@ -142,14 +296,14 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - 有効納付月数計算（各免除タイプ）', () {
-    /// ### B2. 各免除タイプ別の計算
+  group('NationalPensionInput - Each exemption type calculation', () {
+    /// ### 3. 各免除タイプ (Ex-01～Ex-03)
     ///
     /// | No | fullContribution | exemptionType     | 月数 | 計算式          | 期待値   |
     /// |----|-----------------|-------------------|------|---------------|---------|
-    /// | B2a| 0               | threeQuarterExempt| 100  | 100 × 5/8 = 62.5 | 62.5  |
-    /// | B2b| 0               | halfExempt        | 100  | 100 × 3/4 = 75   | 75.0  |
-    /// | B2c| 0               | quarterExempt     | 100  | 100 × 7/8 = 87.5 | 87.5  |
+    /// | Ex-01| 0              | threeQuarterExempt| 100  | 100 × 5/8 = 62.5 | 62.5  |
+    /// | Ex-02| 0              | halfExempt        | 100  | 100 × 3/4 = 75   | 75.0  |
+    /// | Ex-03| 0              | quarterExempt     | 100  | 100 × 7/8 = 87.5 | 87.5  |
     test('3/4免除のみ（100ヶ月）: 62.5ヶ月カウント', () {
       final input = NationalPensionInput(
         fullContribution: 0,
@@ -184,16 +338,16 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - 複数免除の組み合わせ計算', () {
-    /// ### B3. 複数の免除タイプを組み合わせ
+  group('NationalPensionInput - Multiple exemption combinations', () {
+    /// ### 4. 複数免除の組み合わせ (MC-01～MC-05)
     ///
     /// | No | fullContribution | fullExempt | threeQuarter | half | quarter | studentDeferment | 計算式                                | 期待値  |
     /// |----|-----------------|------------|-------------|------|---------|-----------------|--------------------------------------|--------|
-    /// | B3a| 240             | 100        | 0           | 0    | 0       | 0               | 240 + 50 = 290                       | 290.0  |
-    /// | B3b| 240             | 80         | 0           | 100  | 0       | 0               | 240 + 40 + 75 = 355                  | 355.0  |
-    /// | B3c| 200             | 80         | 80          | 80   | 40      | 0               | 200 + 40 + 50 + 60 + 35 = 385        | 385.0  |
-    /// | B3d| 300             | 160        | 40          | 0    | 0       | 0               | 300 + 80 + 25 = 405                  | 405.0  |
-    /// | B3e| 240             | 100        | 0           | 0    | 0       | 48              | 240 + 50（48 は非計上）= 290         | 290.0  |
+    /// | MC-01| 240             | 100        | 0           | 0    | 0       | 0               | 240 + 50 = 290                       | 290.0  |
+    /// | MC-02| 240             | 80         | 0           | 100  | 0       | 0               | 240 + 40 + 75 = 355                  | 355.0  |
+    /// | MC-03| 200             | 80         | 80          | 80   | 40      | 0               | 200 + 40 + 50 + 60 + 35 = 385        | 385.0  |
+    /// | MC-04| 300             | 160        | 40          | 0    | 0       | 0               | 300 + 80 + 25 = 405                  | 405.0  |
+    /// | MC-05| 240             | 100        | 0           | 0    | 0       | 48              | 240 + 50（48 は非計上）= 290         | 290.0  |
     test('全額免除と3/4免除の混合', () {
       final input = NationalPensionInput(
         fullContribution: 240,
@@ -262,20 +416,21 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - isValid() 決定表', () {
-    /// ### C. isValid() の複合条件検証
+  group('NationalPensionInput - isValid() decision table', () {
+    /// ### 5. isValid() 決定表 (VAL-01～VAL-10)
     ///
     /// | No | fullContribution | effective | age | expected | 説明                            |
     /// |----|-----------------|-----------|-----|----------|-------------------------------|
-    /// | C1 | 0               | 0.0       | 65  | true     | 最小有効（全ゼロ、標準受給）      |
-    /// | C2 | 480             | 480.0     | 65  | true     | 最大有効（フル納付、標準受給）    |
-    /// | C3 | 240             | 240.0     | 60  | true     | 年齢下限OK（60歳）               |
-    /// | C4 | 240             | 240.0     | 75  | true     | 年齢上限OK（75歳）               |
-    /// | C5 | -1              | -1.0      | 65  | false    | 負の納付月数                     |
-    /// | C6 | 481             | 481.0     | 65  | false    | 有効月数超過（>480月）           |
-    /// | C7 | 240             | 240.0     | 59  | false    | 年齢下限未満（59歳）             |
-    /// | C8 | 240             | 240.0     | 76  | false    | 年齢上限超過（76歳）             |
-    /// | C9 | 250             | 481.0     | 65  | false    | 複合超過（有効月数>480）         |
+    /// | VAL-01 | 0            | 0.0       | 65  | true     | 最小有効（全ゼロ、標準受給）      |
+    /// | VAL-02 | 480          | 480.0     | 65  | true     | 最大有効（フル納付、標準受給）    |
+    /// | VAL-03 | 240          | 240.0     | 60  | true     | 年齢下限OK（60歳）               |
+    /// | VAL-04 | 240          | 240.0     | 75  | true     | 年齢上限OK（75歳）               |
+    /// | VAL-05 | 240          | 240.0     | 65  | true     | 学生納付特例を含む               |
+    /// | VAL-06 | 480          | 480.0     | 59  | false    | 年齢下限未満（59歳）             |
+    /// | VAL-07 | 480          | 480.0     | 76  | false    | 年齢上限超過（76歳）             |
+    /// | VAL-08 | 481          | 481.0     | 65  | false    | 有効月数超過（>480月）           |
+    /// | VAL-09 | -1           | -1.0      | 65  | false    | 負の納付月数                     |
+    /// | VAL-10 | 250          | 481.0     | 65  | false    | 複合超過（有効月数>480）         |
     test('有効: 全てデフォルト、年齢65', () {
       final input = NationalPensionInput(
         fullContribution: 0,
@@ -373,18 +528,20 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - getPensionAdjustmentRate()', () {
-    /// ### D. 受給開始年齢別の調整率計算
+  group('NationalPensionInput - Pension adjustment rate calculation', () {
+    /// ### 6. 調整率計算 (AJ-01～AJ-09)
     ///
     /// | No | desiredAge | monthsDiff | 区分       | 計算式                  | 期待値 |
     /// |----|-----------|-----------|----------|------------------------|--------|
-    /// | D1 | 60        | -60       | 繰上げ5年  | 1.0 - (0.004 × 60)     | 0.76   |
-    /// | D2 | 62        | -36       | 繰上げ3年  | 1.0 - (0.004 × 36)     | 0.856  |
-    /// | D3 | 64        | -12       | 繰上げ1年  | 1.0 - (0.004 × 12)     | 0.952  |
-    /// | D4 | 65        | 0         | 標準受給   | 1.0（減額なし）        | 1.0    |
-    /// | D5 | 66        | 12        | 繰下げ1年  | 1.0 + (0.007 × 12)     | 1.084  |
-    /// | D6 | 70        | 60        | 繰下げ5年  | 1.0 + (0.007 × 60)     | 1.42   |
-    /// | D7 | 75        | 120       | 繰下げ10年 | 1.0 + (0.007 × 120)    | 1.84   |
+    /// | AJ-01 | 60        | -60       | 繰上げ5年  | 1.0 - (0.004 × 60)     | 0.76   |
+    /// | AJ-02 | 62        | -36       | 繰上げ3年  | 1.0 - (0.004 × 36)     | 0.856  |
+    /// | AJ-03 | 64        | -12       | 繰上げ1年  | 1.0 - (0.004 × 12)     | 0.952  |
+    /// | AJ-04 | 65        | 0         | 標準受給   | 1.0（減額なし）        | 1.0    |
+    /// | AJ-05 | 66        | 12        | 繰下げ1年  | 1.0 + (0.007 × 12)     | 1.084  |
+    /// | AJ-06 | 70        | 60        | 繰下げ5年  | 1.0 + (0.007 × 60)     | 1.42   |
+    /// | AJ-07 | 75        | 120       | 繰下げ10年 | 1.0 + (0.007 × 120)    | 1.84   |
+    /// | AJ-08 | 65～70   | 複数      | 依存性検証 | 納付月数・免除状況影響なし | 年齢のみ |
+    /// | AJ-09 | 60～75   | 連続      | 線形関係   | 月数×0.004or0.007       | 比例 |
     test('60歳受給: 0.76（繰上げ5年）', () {
       final input = NationalPensionInput(
         fullContribution: 480,
@@ -468,30 +625,30 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - 基礎年金額定数', () {
-    /// ### E. 年金定数と計算の一貫性
+  group('NationalPensionInput - Basic pension constants', () {
+    /// ### 7. 定数（基礎年金額） (CST-01～CST-04)
     ///
     /// | No | 定数名                              | 期待値      | 説明                  |
     /// |----|-------------------------------------|-----------|----------------------|
-    /// | E1 | basicPensionMonthlyAmount           | 69,308.0  | 2025年度基本月額      |
-    /// | E2 | getCurrentBasicPensionAmount()      | 69,308.0  | 月額スタティック取得  |
-    /// | E3 | getCurrentBasicPensionAnnualAmount()| 831,696.0 | 月額 × 12             |
-    /// | E4 | 年額 = 月額 × 12の関係              | 一致       | 計算の整合性検証      |
-    test('basicPensionMonthlyAmount: 69,308円', () {
-      expect(NationalPensionInput.basicPensionMonthlyAmount, 69308.0);
+    /// | CST-01 | basicPensionMonthlyAmount           | 70,608.0  | 2026年度基本月額      |
+    /// | CST-02 | getCurrentBasicPensionAmount()      | 70,608.0  | 月額スタティック取得  |
+    /// | CST-03 | getCurrentBasicPensionAnnualAmount()| 847,296.0 | 月額 × 12             |
+    /// | CST-04 | 年額 = 月額 × 12の関係              | 一致       | 計算の整合性検証      |
+    test('basicPensionMonthlyAmount: 70,608円', () {
+      expect(NationalPensionInput.basicPensionMonthlyAmount, 70608.0);
     });
 
     test('getCurrentBasicPensionAmount(): 月額を返す', () {
       expect(
         NationalPensionInput.getCurrentBasicPensionAmount(),
-        69308.0,
+        70608.0,
       );
     });
 
-    test('getCurrentBasicPensionAnnualAmount(): 831,696円（月額×12）', () {
+    test('getCurrentBasicPensionAnnualAmount(): 847,296円（月額×12）', () {
       expect(
         NationalPensionInput.getCurrentBasicPensionAnnualAmount(),
-        831696.0,
+        847296.0,
       );
     });
 
@@ -503,13 +660,13 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - クラス定数', () {
-    /// ### F. シシテム定数の定義確認
+  group('NationalPensionInput - Class constants', () {
+    /// ### 8. クラス定数 (CST-C1～CST-C2)
     ///
     /// | No | 定数                    | 期待値 | 説明                         |
     /// |----|------------------------|--------|--------------------------|
-    /// | F1 | pensionStartAge        | 65     | 標準受給開始年齢              |
-    /// | F2 | fullContributionMonths | 480    | 完全納付期間（40年 = 12×40）|
+    /// | CST-C1 | pensionStartAge        | 65     | 標準受給開始年齢              |
+    /// | CST-C2 | fullContributionMonths | 480    | 完全納付期間（40年 = 12×40）|
     test('pensionStartAge: 65歳', () {
       expect(NationalPensionInput.pensionStartAge, 65);
     });
@@ -519,17 +676,17 @@ void main() {
     });
   });
 
-  group('NationalPensionInput - 実践的シナリオ', () {
-    /// ### G. リアル・ユースケース（real-world scenarios）
+  group('NationalPensionInput - Real-world scenarios', () {
+    /// ### 9. リアルユースケース (SC-01～SC-06)
     ///
     /// | No | シナリオ名              | 条件                                    | 期待値                  |
     /// |----|----------------------|----------------------------------------|------------------------|
-    /// | G1 | 失業&免除経験          | fc=380, fullExempt=100                | effective=430, valid✓  |
-    /// | G2 | 困窮期間（多様な免除）   | fc=300, 全exemption混合                | effective=412.5, valid✓|
-    /// | G3 | 60歳早期受給           | fc=240, 複数免除, age=60              | adjust=0.76            |
-    /// | G4 | 75歳繰下げ受給         | fc=240, 複数免除, age=75              | adjust=1.84            |
-    /// | G5 | 完全フル納付           | fc=480, age=65                        | effective=480, adjust=1.0|
-    /// | G6 | 学生期間含む           | fc=432, studentDeferment=48           | effective=432, valid✓  |
+    /// | SC-01 | 失業&免除経験          | fc=380, fullExempt=100                | effective=430, valid✓  |
+    /// | SC-02 | 困窮期間（多様な免除）   | fc=300, 全exemption混合                | effective=412.5, valid✓|
+    /// | SC-03 | 60歳早期受給           | fc=240, 複数免除, age=60              | adjust=0.76            |
+    /// | SC-04 | 75歳繰下げ受給         | fc=240, 複数免除, age=75              | adjust=1.84            |
+    /// | SC-05 | 完全フル納付           | fc=480, age=65                        | effective=480, adjust=1.0|
+    /// | SC-06 | 学生期間含む           | fc=432, studentDeferment=48           | effective=432, valid✓  |
     test('シナリオA: 失業経験（全額免除100ヶ月+納付380ヶ月）', () {
       final input = NationalPensionInput(
         fullContribution: 380,
