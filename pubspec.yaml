@@ -1,0 +1,38 @@
+name: life_planning
+description: "老後生活資産計画アプリ - Flutter Web版MVP"
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Clean Architecture & Dependency Injection
+  get_it: ^7.7.0
+  
+  # State Management
+  provider: ^6.1.5
+  
+  # Entity & Value Objects
+  equatable: ^2.0.8
+  
+  # Logging
+  logger: ^2.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^3.0.2
+  
+  # Testing
+  test: ^1.30.0
+  mockito: ^5.6.4
+  build_runner: ^2.13.1
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,63 @@
+name: Test & Coverage
+
+on:
+  push:
+    branches: [ main, develop, feature/** ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Check coverage percentage
+        run: |
+          # Check if coverage file exists
+          if [ ! -f coverage/lcov.info ]; then
+            echo "❌ Coverage file not found"
+            exit 1
+          fi
+          
+          # Extract LH and LF from the last record in lcov.info
+          LH=$(grep '^LH:' coverage/lcov.info | tail -1 | cut -d: -f2)
+          LF=$(grep '^LF:' coverage/lcov.info | tail -1 | cut -d: -f2)
+          
+          if [ -z "$LH" ] || [ -z "$LF" ]; then
+            echo "❌ Could not extract coverage from lcov.info"
+            echo "File contents:"
+            tail -20 coverage/lcov.info
+            exit 1
+          fi
+          
+          # Calculate coverage percentage
+          COVERAGE=$(awk "BEGIN {printf \"%.1f\", ($LH/$LF)*100}")
+          echo "Code Coverage: ${COVERAGE}% (${LH}/${LF} lines)"
+          
+          # Check if coverage is 100%
+          if [ "${COVERAGE}" != "100.0" ]; then
+            echo "❌ Coverage must be 100%, got ${COVERAGE}%"
+            exit 1
+          fi
+          echo "✅ Coverage is 100%"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
