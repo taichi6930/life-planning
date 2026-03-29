@@ -6,7 +6,7 @@ void main() {
   group('ResultCard Molecule Tests', () {
     testWidgets('ResultCard displays title', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ResultCard(
               title: '計算結果',
@@ -24,7 +24,7 @@ void main() {
 
     testWidgets('ResultCard displays results', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ResultCard(
               title: '基礎年金',
@@ -46,7 +46,7 @@ void main() {
 
     testWidgets('ResultCard displays units', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ResultCard(
               title: '年金計算',
@@ -68,7 +68,7 @@ void main() {
     testWidgets('ResultCard shows highlight style',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ResultCard(
               title: '重要な結果',
@@ -88,7 +88,7 @@ void main() {
     testWidgets('ResultCard displays multiple items',
         (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ResultCard(
               title: '詳細',
