@@ -639,4 +639,178 @@ void main() {
       expect(input.studentDeferment, 0);
     });
   });
+
+  group('NationalPensionInput - デシジョンテーブル (年齢と調整率)', () {
+    // 【決定表】受給開始年齢 → 調整率の計算
+    // 列: age, monthsDiff, 期待される計算式, 期待値
+    final decisionTable = <Map<String, dynamic>>[
+      {
+        'age': 60,
+        'months_diff': -60,
+        'formula': '1.0 - (0.004 × 60) = 1.0 - 0.24 = 0.76',
+        'expected': 0.76,
+      },
+      {
+        'age': 61,
+        'months_diff': -48,
+        'formula': '1.0 - (0.004 × 48) = 1.0 - 0.192 = 0.808',
+        'expected': 0.808,
+      },
+      {
+        'age': 62,
+        'months_diff': -36,
+        'formula': '1.0 - (0.004 × 36) = 1.0 - 0.144 = 0.856',
+        'expected': 0.856,
+      },
+      {
+        'age': 64,
+        'months_diff': -12,
+        'formula': '1.0 - (0.004 × 12) = 1.0 - 0.048 = 0.952',
+        'expected': 0.952,
+      },
+      {
+        'age': 65,
+        'months_diff': 0,
+        'formula': '1.0 (標準受給)',
+        'expected': 1.0,
+      },
+      {
+        'age': 66,
+        'months_diff': 12,
+        'formula': '1.0 + (0.007 × 12) = 1.0 + 0.084 = 1.084',
+        'expected': 1.084,
+      },
+      {
+        'age': 68,
+        'months_diff': 36,
+        'formula': '1.0 + (0.007 × 36) = 1.0 + 0.252 = 1.252',
+        'expected': 1.252,
+      },
+      {
+        'age': 70,
+        'months_diff': 60,
+        'formula': '1.0 + (0.007 × 60) = 1.0 + 0.42 = 1.42',
+        'expected': 1.42,
+      },
+      {
+        'age': 75,
+        'months_diff': 120,
+        'formula': '1.0 + (0.007 × 120) = 1.0 + 0.84 = 1.84',
+        'expected': 1.84,
+      },
+    ];
+
+    for (final row in decisionTable) {
+      test('年齢 ${row['age']}: ${row['formula']} → ${row['expected']}', () {
+        final input = NationalPensionInput(
+          fullContribution: 480,
+          hasPaymentSuspension: false,
+          desiredPensionStartAge: row['age'] as int,
+        );
+        expect(
+          input.getPensionAdjustmentRate(),
+          closeTo(row['expected'] as double, 0.001),
+        );
+      });
+    }
+  });
+
+  group('NationalPensionInput - デシジョンテーブル (isValid() 条件)', () {
+    // 【決定表】複数条件の組み合わせによる妥当性チェック
+    // 列: fullContribution, exemption, age, 期待値, 説明
+    final decisionTable = <Map<String, dynamic>>[
+      // 有効なケース（✓）
+      {
+        'fullContribution': 0,
+        'fullExempt': 0,
+        'age': 65,
+        'expected': true,
+        'desc': '✓ 最小有効: 全ゼロ、年齢65',
+      },
+      {
+        'fullContribution': 480,
+        'fullExempt': 0,
+        'age': 65,
+        'expected': true,
+        'desc': '✓ 最大有効: フル納付480月、年齢65',
+      },
+      {
+        'fullContribution': 240,
+        'fullExempt': 0,
+        'age': 60,
+        'expected': true,
+        'desc': '✓ 年齢下限: 年齢60（下限OK）',
+      },
+      {
+        'fullContribution': 240,
+        'fullExempt': 0,
+        'age': 75,
+        'expected': true,
+        'desc': '✓ 年齢上限: 年齢75（上限OK）',
+      },
+      {
+        'fullContribution': 300,
+        'fullExempt': 360,
+        'age': 65,
+        'expected': true,
+        'desc': '✓ 免除混合: 300 + (360 × 1/2) = 480',
+      },
+
+      // 無効なケース（✗）
+      {
+        'fullContribution': -1,
+        'fullExempt': 0,
+        'age': 65,
+        'expected': false,
+        'desc': '✗ 負の納付月数: fullContribution < 0',
+      },
+      {
+        'fullContribution': 481,
+        'fullExempt': 0,
+        'age': 65,
+        'expected': false,
+        'desc': '✗ 有効月数超過: 481 > 480',
+      },
+      {
+        'fullContribution': 240,
+        'fullExempt': -10,
+        'age': 65,
+        'expected': false,
+        'desc': '✗ 負の免除月数: fullExempt < 0',
+      },
+      {
+        'fullContribution': 240,
+        'fullExempt': 0,
+        'age': 59,
+        'expected': false,
+        'desc': '✗ 年齢下限未満: 59 < 60',
+      },
+      {
+        'fullContribution': 240,
+        'fullExempt': 0,
+        'age': 76,
+        'expected': false,
+        'desc': '✗ 年齢上限超過: 76 > 75',
+      },
+      {
+        'fullContribution': 250,
+        'fullExempt': 462,
+        'age': 65,
+        'expected': false,
+        'desc': '✗ 複合超過: 250 + (462 × 1/2) = 481 > 480',
+      },
+    ];
+
+    for (final row in decisionTable) {
+      test(row['desc'] as String, () {
+        final input = NationalPensionInput(
+          fullContribution: row['fullContribution'] as int,
+          fullExempt: row['fullExempt'] as int,
+          hasPaymentSuspension: (row['fullExempt'] as int) > 0 ? true : false,
+          desiredPensionStartAge: row['age'] as int,
+        );
+        expect(input.isValid(), row['expected'] as bool);
+      });
+    }
+  });
 }
