@@ -44,18 +44,18 @@ List<Story> organismsStories() => [
   // PensionResultDisplay Stories
   Story(
     name: 'Organisms/PensionResultDisplay - Empty',
-    builder: (context) => ProviderScope(
+    builder: (context) => const ProviderScope(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: PensionResultDisplay(),
       ),
     ),
   ),
   Story(
     name: 'Organisms/PensionResultDisplay - With Results',
-    builder: (context) => ProviderScope(
+    builder: (context) => const ProviderScope(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: PensionResultDisplay(
           nationalPensionYearly: '¥840,960',
           nationalPensionMonthly: '¥70,080',
@@ -66,9 +66,9 @@ List<Story> organismsStories() => [
   ),
   Story(
     name: 'Organisms/PensionResultDisplay - Loading',
-    builder: (context) => ProviderScope(
+    builder: (context) => const ProviderScope(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         child: PensionResultDisplay(
           isLoading: true,
         ),

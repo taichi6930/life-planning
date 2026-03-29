@@ -62,7 +62,7 @@ class PensionResultDisplay extends StatelessWidget {
                 '年額': nationalPensionYearly ?? '-',
                 '月額': nationalPensionMonthly ?? '-',
               },
-              units: {
+              units: const {
                 '年額': '円',
                 '月額': '円',
               },

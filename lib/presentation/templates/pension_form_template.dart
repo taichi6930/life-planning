@@ -86,8 +86,8 @@ class PensionFormTemplate extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: TabBar(
-          tabs: const [
+        appBar: const TabBar(
+          tabs: [
             Tab(text: 'フォーム'),
             Tab(text: '結果'),
           ],

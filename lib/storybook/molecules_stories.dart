@@ -70,8 +70,8 @@ List<Story> moleculesStories() => [
   // ResultCard Stories
   Story(
     name: 'Molecules/ResultCard - Basic Results',
-    builder: (context) => Padding(
-      padding: const EdgeInsets.all(16),
+    builder: (context) => const Padding(
+      padding: EdgeInsets.all(16),
       child: ResultCard(
         title: '基礎年金計算結果',
         results: {
@@ -87,8 +87,8 @@ List<Story> moleculesStories() => [
   ),
   Story(
     name: 'Molecules/ResultCard - Highlight',
-    builder: (context) => Padding(
-      padding: const EdgeInsets.all(16),
+    builder: (context) => const Padding(
+      padding: EdgeInsets.all(16),
       child: ResultCard(
         title: '主要結果',
         results: {
@@ -105,8 +105,8 @@ List<Story> moleculesStories() => [
   ),
   Story(
     name: 'Molecules/ResultCard - Multiple Items',
-    builder: (context) => Padding(
-      padding: const EdgeInsets.all(16),
+    builder: (context) => const Padding(
+      padding: EdgeInsets.all(16),
       child: ResultCard(
         title: '年金納付状況',
         results: {

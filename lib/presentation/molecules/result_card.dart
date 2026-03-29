@@ -53,7 +53,7 @@ class ResultCard extends StatelessWidget {
                   isHighlight: isHighlight,
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
