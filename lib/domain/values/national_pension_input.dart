@@ -146,7 +146,7 @@ class NationalPensionInput {
   /// 入力値の妥当性チェック
   /// 
   /// 検証項目:
-  /// 1. 全フィールドが非負: fullContribution >= 0（免除フィールドはデフォルト0）
+  /// 1. 全フィールドが非負: fullContribution >= 0、全免除フィールド >= 0
   /// 2. 有効納付月数の合計: effectiveContributionMonths が 0 ～ 480月以内
   /// 3. desiredPensionStartAge: 60歳以上75歳以下
   /// 
@@ -154,6 +154,11 @@ class NationalPensionInput {
   bool isValid() {
     final effective = effectiveContributionMonths;
     return fullContribution >= 0 &&
+        fullExempt >= 0 &&
+        threeQuarterExempt >= 0 &&
+        halfExempt >= 0 &&
+        quarterExempt >= 0 &&
+        studentDeferment >= 0 &&
         effective >= 0 &&
         effective <= fullContributionMonths &&
         desiredPensionStartAge >= 60 &&
@@ -196,18 +201,13 @@ class NationalPensionInput {
     const double earlyReductionPerMonth = 0.004; // 繰上げ月0.4%減
     const double delayIncreasePerMonth = 0.007;  // 繰下げ月0.7%増
 
-    if (desiredPensionStartAge < pensionStartAge) {
-      // 繰上げ受給
-      final months = (pensionStartAge - desiredPensionStartAge) * 12;
-      return 1.0 - (earlyReductionPerMonth * months);
-    } else if (desiredPensionStartAge > pensionStartAge) {
-      // 繰下げ受給
-      final months = (desiredPensionStartAge - pensionStartAge) * 12;
-      return 1.0 + (delayIncreasePerMonth * months);
-    } else {
-      // 標準受給（65歳）
-      return 1.0;
-    }
+    final months = (desiredPensionStartAge - pensionStartAge) * 12;
+
+    final perMonth = desiredPensionStartAge < pensionStartAge
+     ? earlyReductionPerMonth
+     : delayIncreasePerMonth;
+
+     return 1.0 + (perMonth * months);
   }
 
   /// 現在の基礎年金基本月額を取得
