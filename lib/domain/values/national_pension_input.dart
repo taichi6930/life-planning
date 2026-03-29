@@ -146,7 +146,7 @@ class NationalPensionInput {
   /// 入力値の妥当性チェック
   /// 
   /// 検証項目:
-  /// 1. 全フィールドが非負: fullContribution >= 0（免除フィールドはデフォルト0）
+  /// 1. 全フィールドが非負: fullContribution >= 0、全免除フィールド >= 0
   /// 2. 有効納付月数の合計: effectiveContributionMonths が 0 ～ 480月以内
   /// 3. desiredPensionStartAge: 60歳以上75歳以下
   /// 
@@ -154,6 +154,11 @@ class NationalPensionInput {
   bool isValid() {
     final effective = effectiveContributionMonths;
     return fullContribution >= 0 &&
+        fullExempt >= 0 &&
+        threeQuarterExempt >= 0 &&
+        halfExempt >= 0 &&
+        quarterExempt >= 0 &&
+        studentDeferment >= 0 &&
         effective >= 0 &&
         effective <= fullContributionMonths &&
         desiredPensionStartAge >= 60 &&

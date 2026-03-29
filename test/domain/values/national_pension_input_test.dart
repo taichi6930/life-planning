@@ -67,6 +67,36 @@ void main() {
       );
       expect(input.isValid(), false);
     });
+
+    test('fullExempt が負数だと無効', () {
+      final input = NationalPensionInput(
+        fullContribution: 240,
+        fullExempt: -10,
+        hasPaymentSuspension: true,
+        desiredPensionStartAge: 65,
+      );
+      expect(input.isValid(), false);
+    });
+
+    test('quarterExempt が負数だと無効', () {
+      final input = NationalPensionInput(
+        fullContribution: 240,
+        quarterExempt: -5,
+        hasPaymentSuspension: true,
+        desiredPensionStartAge: 65,
+      );
+      expect(input.isValid(), false);
+    });
+
+    test('studentDeferment が負数だと無効', () {
+      final input = NationalPensionInput(
+        fullContribution: 240,
+        studentDeferment: -20,
+        hasPaymentSuspension: true,
+        desiredPensionStartAge: 65,
+      );
+      expect(input.isValid(), false);
+    });
   });
 
   group('NationalPensionInput - 有効納付月数計算（全額免除）', () {
