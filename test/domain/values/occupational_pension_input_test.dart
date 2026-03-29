@@ -6,48 +6,21 @@ void main() {
     group('Constructor and validation', () {
       test('正常な値で初期化できる', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
           desiredPensionStartAge: 65,
         );
 
-        expect(input.currentAge, 45);
         expect(input.enrollmentMonths, 300);
         expect(input.averageMonthlyReward, 300000);
         expect(input.averageBonusReward, 600000);
         expect(input.desiredPensionStartAge, 65);
       });
 
-      test('currentAge が範囲外の場合はエラー', () {
-        expect(
-          () => OccupationalPensionInput(
-            currentAge: -1,
-            enrollmentMonths: 300,
-            averageMonthlyReward: 300000,
-            averageBonusReward: 600000,
-            desiredPensionStartAge: 65,
-          ),
-          throwsArgumentError,
-        );
-
-        expect(
-          () => OccupationalPensionInput(
-            currentAge: 121,
-            enrollmentMonths: 300,
-            averageMonthlyReward: 300000,
-            averageBonusReward: 600000,
-            desiredPensionStartAge: 65,
-          ),
-          throwsArgumentError,
-        );
-      });
-
       test('enrollmentMonths が範囲外の場合はエラー', () {
         expect(
           () => OccupationalPensionInput(
-            currentAge: 45,
             enrollmentMonths: -1,
             averageMonthlyReward: 300000,
             averageBonusReward: 600000,
@@ -58,7 +31,6 @@ void main() {
 
         expect(
           () => OccupationalPensionInput(
-            currentAge: 45,
             enrollmentMonths: 601,
             averageMonthlyReward: 300000,
             averageBonusReward: 600000,
@@ -71,7 +43,6 @@ void main() {
       test('averageMonthlyReward が負数の場合はエラー', () {
         expect(
           () => OccupationalPensionInput(
-            currentAge: 45,
             enrollmentMonths: 300,
             averageMonthlyReward: -1,
             averageBonusReward: 600000,
@@ -84,7 +55,6 @@ void main() {
       test('averageBonusReward が負数の場合はエラー', () {
         expect(
           () => OccupationalPensionInput(
-            currentAge: 45,
             enrollmentMonths: 300,
             averageMonthlyReward: 300000,
             averageBonusReward: -1,
@@ -97,7 +67,6 @@ void main() {
       test('desiredPensionStartAge が範囲外の場合はエラー', () {
         expect(
           () => OccupationalPensionInput(
-            currentAge: 45,
             enrollmentMonths: 300,
             averageMonthlyReward: 300000,
             averageBonusReward: 600000,
@@ -107,9 +76,7 @@ void main() {
         );
 
         expect(
-          () => OccupationalPensionInput(
-            currentAge: 45,
-            enrollmentMonths: 300,
+          () => OccupationalPensionInput(enrollmentMonths: 300,
             averageMonthlyReward: 300000,
             averageBonusReward: 600000,
             desiredPensionStartAge: 76,
@@ -120,29 +87,28 @@ void main() {
 
       test('境界値でも正常に初期化できる', () {
         final input1 = OccupationalPensionInput(
-          currentAge: 0,
           enrollmentMonths: 0,
           averageMonthlyReward: 0,
           averageBonusReward: 0,
           desiredPensionStartAge: 60,
         );
-        expect(input1.currentAge, 0);
+        expect(input1.enrollmentMonths, 0);
+        expect(input1.desiredPensionStartAge, 60);
 
         final input2 = OccupationalPensionInput(
-          currentAge: 120,
           enrollmentMonths: 600,
           averageMonthlyReward: 99999999,
           averageBonusReward: 99999999,
           desiredPensionStartAge: 75,
         );
-        expect(input2.currentAge, 120);
+        expect(input2.enrollmentMonths, 600);
+        expect(input2.desiredPensionStartAge, 75);
       });
     });
 
     group('Enrollment rate calculation', () {
       test('getEnrollmentRate は正しい値を返す', () {
         final input0 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 0,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -151,7 +117,6 @@ void main() {
         expect(input0.getEnrollmentRate(), 0.0);
 
         final input300 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -160,7 +125,6 @@ void main() {
         expect(input300.getEnrollmentRate(), closeTo(0.5, 0.0001));
 
         final input600 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 600,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -171,7 +135,6 @@ void main() {
 
       test('境界値での getEnrollmentRate 計算', () {
         final input1 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 1,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -180,7 +143,6 @@ void main() {
         expect(input1.getEnrollmentRate(), closeTo(1 / 600, 0.0001));
 
         final input599 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 599,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -193,7 +155,6 @@ void main() {
     group('Pension adjustment rate calculation', () {
       test('65歳受給の場合は1.0を返す', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -204,7 +165,6 @@ void main() {
 
       test('繰上げ受給（60歳）の調整率を計算', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -216,7 +176,6 @@ void main() {
 
       test('繰下げ受給（70歳）の調整率を計算', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -228,7 +187,6 @@ void main() {
 
       test('最大繰下げ受給（75歳）の調整率を計算', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -241,7 +199,6 @@ void main() {
       test('全ての年齢での調整率を確認', () {
         for (int age = 60; age <= 75; age++) {
           final input = OccupationalPensionInput(
-            currentAge: 45,
             enrollmentMonths: 300,
             averageMonthlyReward: 300000,
             averageBonusReward: 600000,
@@ -257,7 +214,6 @@ void main() {
     group('Equality and hash code', () {
       test('同じ値で初期化された2つのインスタンスは等しい', () {
         final input1 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -265,7 +221,6 @@ void main() {
         );
 
         final input2 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -276,29 +231,8 @@ void main() {
         expect(input1.hashCode, input2.hashCode);
       });
 
-      test('異なる値で初期化された2つのインスタンスは等しくない', () {
-        final input1 = OccupationalPensionInput(
-          currentAge: 45,
-          enrollmentMonths: 300,
-          averageMonthlyReward: 300000,
-          averageBonusReward: 600000,
-          desiredPensionStartAge: 65,
-        );
-
-        final input2 = OccupationalPensionInput(
-          currentAge: 46, // 異なる
-          enrollmentMonths: 300,
-          averageMonthlyReward: 300000,
-          averageBonusReward: 600000,
-          desiredPensionStartAge: 65,
-        );
-
-        expect(input1, isNot(input2));
-      });
-
       test('同じインスタンスは自分自身に等しい', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -310,7 +244,6 @@ void main() {
 
       test('異なる全フィールドで等しくないはず', () {
         final input1 = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -321,20 +254,6 @@ void main() {
           input1,
           isNot(
             OccupationalPensionInput(
-              currentAge: 46,
-              enrollmentMonths: 300,
-              averageMonthlyReward: 300000,
-              averageBonusReward: 600000,
-              desiredPensionStartAge: 65,
-            ),
-          ),
-        );
-
-        expect(
-          input1,
-          isNot(
-            OccupationalPensionInput(
-              currentAge: 45,
               enrollmentMonths: 301,
               averageMonthlyReward: 300000,
               averageBonusReward: 600000,
@@ -347,7 +266,6 @@ void main() {
           input1,
           isNot(
             OccupationalPensionInput(
-              currentAge: 45,
               enrollmentMonths: 300,
               averageMonthlyReward: 300001,
               averageBonusReward: 600000,
@@ -360,7 +278,6 @@ void main() {
           input1,
           isNot(
             OccupationalPensionInput(
-              currentAge: 45,
               enrollmentMonths: 300,
               averageMonthlyReward: 300000,
               averageBonusReward: 600001,
@@ -373,7 +290,6 @@ void main() {
           input1,
           isNot(
             OccupationalPensionInput(
-              currentAge: 45,
               enrollmentMonths: 300,
               averageMonthlyReward: 300000,
               averageBonusReward: 600000,
@@ -387,7 +303,6 @@ void main() {
     group('isValid method', () {
       test('有効な値では isValid が true を返す', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -405,7 +320,6 @@ void main() {
 
       test('境界値でも isValid が true', () {
         final input = OccupationalPensionInput(
-          currentAge: 0,
           enrollmentMonths: 0,
           averageMonthlyReward: 0,
           averageBonusReward: 0,
@@ -418,7 +332,6 @@ void main() {
     group('toString', () {
       test('toString は有効な文字列を返す', () {
         final input = OccupationalPensionInput(
-          currentAge: 45,
           enrollmentMonths: 300,
           averageMonthlyReward: 300000,
           averageBonusReward: 600000,
@@ -427,7 +340,6 @@ void main() {
 
         final str = input.toString();
         expect(str, contains('OccupationalPensionInput'));
-        expect(str, contains('45'));
         expect(str, contains('300'));
         expect(str, contains('300000'));
         expect(str, contains('600000'));
