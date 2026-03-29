@@ -380,7 +380,7 @@ void main() {
           averageBonusReward: 600000,
           desiredPensionStartAge: 61,
         );
-        final expected = 1.0 - (0.004 * 4 * 12); // 0.808
+        const expected = 1.0 - (0.004 * 4 * 12); // 0.808
         expect(input.getPensionAdjustmentRate(), closeTo(expected, 0.0001));
       });
 
@@ -391,7 +391,7 @@ void main() {
           averageBonusReward: 600000,
           desiredPensionStartAge: 64,
         );
-        final expected = 1.0 - (0.004 * 1 * 12); // 0.952
+        const expected = 1.0 - (0.004 * 1 * 12); // 0.952
         expect(input.getPensionAdjustmentRate(), closeTo(expected, 0.0001));
       });
 
@@ -402,7 +402,7 @@ void main() {
           averageBonusReward: 600000,
           desiredPensionStartAge: 66,
         );
-        final expected = 1.0 + (0.007 * 1 * 12); // 1.084
+        const expected = 1.0 + (0.007 * 1 * 12); // 1.084
         expect(input.getPensionAdjustmentRate(), closeTo(expected, 0.0001));
       });
 
@@ -449,7 +449,7 @@ void main() {
           averageBonusReward: 0,
           desiredPensionStartAge: 65,
         );
-        final expected = 400000 * 300 * 0.005481;
+        const expected = 400000 * 300 * 0.005481;
         expect(
           input.getProportionalPensionAfter2003(),
           closeTo(expected, 1),
@@ -463,7 +463,7 @@ void main() {
           averageBonusReward: 1200000,
           desiredPensionStartAge: 65,
         );
-        final expected = 1200000 * 300 * 0.001738;
+        const expected = 1200000 * 300 * 0.001738;
         expect(
           input.getProportionalPensionAfter2003(),
           closeTo(expected, 1),
@@ -477,7 +477,7 @@ void main() {
           averageBonusReward: 600000,
           desiredPensionStartAge: 65,
         );
-        final expected =
+        const expected =
             400000 * 400 * 0.005481 + 600000 * 400 * 0.001738;
         expect(
           input.getProportionalPensionAfter2003(),
@@ -502,7 +502,7 @@ void main() {
           averageBonusReward: 2000000,
           desiredPensionStartAge: 65,
         );
-        final expected =
+        const expected =
             1000000 * 600 * 0.005481 + 2000000 * 600 * 0.001738;
         expect(
           input.getProportionalPensionAfter2003(),
@@ -521,7 +521,7 @@ void main() {
           averageMonthlyRewardBefore2003: 300000,
           enrollmentMonthsBefore2003: 100,
         );
-        final expected = 300000 * 100 * 0.007125;
+        const expected = 300000 * 100 * 0.007125;
         expect(
           input.getProportionalPensionBefore2003(),
           closeTo(expected, 1),
@@ -549,7 +549,7 @@ void main() {
           averageMonthlyRewardBefore2003: 500000,
           enrollmentMonthsBefore2003: 300,
         );
-        final expected = 500000 * 300 * 0.007125;
+        const expected = 500000 * 300 * 0.007125;
         expect(
           input.getProportionalPensionBefore2003(),
           closeTo(expected, 1),
@@ -565,7 +565,7 @@ void main() {
           averageMonthlyRewardBefore2003: 350000,
           enrollmentMonthsBefore2003: 600,
         );
-        final expected = 350000 * 600 * 0.007125;
+        const expected = 350000 * 600 * 0.007125;
         expect(
           input.getProportionalPensionBefore2003(),
           closeTo(expected, 1),
@@ -593,7 +593,7 @@ void main() {
           desiredPensionStartAge: 65,
           insuredMonthsSince1961: 240,
         );
-        final expected = 1635.0 * 240 / 480 * 1.0;
+        const expected = 1635.0 * 240 / 480 * 1.0;
         expect(input.getFixedPart(), closeTo(expected, 0.1));
       });
 
@@ -605,7 +605,7 @@ void main() {
           desiredPensionStartAge: 65,
           insuredMonthsSince1961: 480,
         );
-        final expected = 1635.0 * 480 / 480 * 1.0; // 1635
+        const expected = 1635.0 * 480 / 480 * 1.0; // 1635
         expect(input.getFixedPart(), closeTo(expected, 1));
       });
 
@@ -617,7 +617,7 @@ void main() {
           desiredPensionStartAge: 65,
           insuredMonthsSince1961: 1,
         );
-        final expected = 1635.0 * 1 / 480 * 1.0;
+        const expected = 1635.0 * 1 / 480 * 1.0;
         expect(input.getFixedPart(), closeTo(expected, 0.1));
       });
 
@@ -629,7 +629,7 @@ void main() {
           desiredPensionStartAge: 65,
           insuredMonthsSince1961: 600,
         );
-        final expected = 1635.0 * 600 / 480 * 1.0;
+        const expected = 1635.0 * 600 / 480 * 1.0;
         expect(input.getFixedPart(), closeTo(expected, 1));
       });
     });
@@ -722,7 +722,7 @@ void main() {
           hasSpouse: true,
           numberOfChildren: 0,
         );
-        final expected = 230100.0 / 12.0;
+        const expected = 230100.0 / 12.0;
         expect(
           input.getSupplementalPension(),
           closeTo(expected, 0.01),
@@ -738,7 +738,7 @@ void main() {
           hasSpouse: true,
           numberOfChildren: 1,
         );
-        final expected =
+        const expected =
             (230100.0 + 76700.0) / 12.0;
         expect(
           input.getSupplementalPension(),
@@ -755,7 +755,7 @@ void main() {
           hasSpouse: true,
           numberOfChildren: 2,
         );
-        final expected =
+        const expected =
             (230100.0 + 76700.0 + 76700.0) / 12.0;
         expect(
           input.getSupplementalPension(),
@@ -772,7 +772,7 @@ void main() {
           hasSpouse: true,
           numberOfChildren: 3,
         );
-        final expected = (230100.0 + 76700.0 + 76700.0 + 25600.0) / 12.0;
+        const expected = (230100.0 + 76700.0 + 76700.0 + 25600.0) / 12.0;
         expect(
           input.getSupplementalPension(),
           closeTo(expected, 0.01),
@@ -788,7 +788,7 @@ void main() {
           hasSpouse: true,
           numberOfChildren: 4,
         );
-        final expected =
+        const expected =
             (230100.0 + 76700.0 + 76700.0 + 25600.0 + 25600.0) / 12.0;
         expect(
           input.getSupplementalPension(),
@@ -805,7 +805,7 @@ void main() {
           hasSpouse: true,
           numberOfChildren: 5,
         );
-        final expected = (230100.0 + 76700.0 + 76700.0 + 25600.0 +
+        const expected = (230100.0 + 76700.0 + 76700.0 + 25600.0 +
             25600.0 +
             25600.0) /
             12.0;
