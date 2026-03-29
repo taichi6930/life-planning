@@ -31,7 +31,7 @@
 /// - フル納付: 480月（40年） → 基本額の100%受給可能
 /// - 部分納付: 納付月数 < 480月 → 基本額に (納付月数/480) を乗算した額を受給
 /// - 免除期間: 保険料納付が困難な場合、全額・3/4・半額・1/4免除の制度あり
-/// - 学生納付特例: 在学中の納付猶予制度あり（現MVP実装では対象外、将来の拡張として対応予定）
+/// - 学生納付特例: 在学中の納付猶予制度あり（納付月に直接カウントされず、追納待機中）
 /// 
 /// 【受給開始年齢】
 /// 通常は65歳から受給開始（厚生労働省が推奨）
@@ -97,6 +97,16 @@ class NationalPensionInput {
   /// 使用場面: 最小限の経済的困窮状況
   final int quarterExempt;
 
+  /// 学生納付特例期間の月数（納付月にカウントされない、追納待機中）
+  /// 
+  /// 使用場面: 学生期間中の納付猶予
+  /// 特徴：
+  /// - 在学中は保険料納付を猶予される
+  /// - 本フィールドで指定した月数は、effectiveContributionMonths に含まれない
+  /// - 卒業後に「追納」（過去の保険料を遡及納付）することで、納付月数に算入可能
+  /// - 将来の拡張: 追納済み月数を管理する別フィールドを追加予定
+  final int studentDeferment;
+
   /// 免除期間の有無（計算上の調整が必要かどうか）
   /// 
   /// true の場合: 保険料免除期間を含む特別な計算が必要
@@ -128,6 +138,7 @@ class NationalPensionInput {
     required this.threeQuarterExempt,
     required this.halfExempt,
     required this.quarterExempt,
+    required this.studentDeferment,
     required this.hasPaymentSuspension,
     required this.desiredPensionStartAge,
   });
@@ -135,7 +146,7 @@ class NationalPensionInput {
   /// 入力値の妥当性チェック
   /// 
   /// 検証項目:
-  /// 1. 全フィールドが非負: fullContribution, fullExempt, threeQuarterExempt, halfExempt, quarterExempt >= 0
+  /// 1. 全フィールドが非負: fullContribution, fullExempt, threeQuarterExempt, halfExempt, quarterExempt, studentDeferment >= 0
   /// 2. 有効納付月数の合計: effectiveContributionMonths が 0 ～ 480月以内
   /// 3. desiredPensionStartAge: 60歳以上75歳以下
   /// 
@@ -147,6 +158,7 @@ class NationalPensionInput {
         threeQuarterExempt >= 0 &&
         halfExempt >= 0 &&
         quarterExempt >= 0 &&
+        studentDeferment >= 0 &&
         effective >= 0 &&
         effective <= fullContributionMonths &&
         desiredPensionStartAge >= 60 &&

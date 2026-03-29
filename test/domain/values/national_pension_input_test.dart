@@ -10,6 +10,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -23,6 +24,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -36,6 +38,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -49,6 +52,7 @@ void main() {
         threeQuarterExempt: 100,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -62,6 +66,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 100,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -75,7 +80,22 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 100,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
+        desiredPensionStartAge: 65,
+      );
+      expect(input.isValid(), true);
+    });
+
+    test('studentDeferment が正の値でも有効', () {
+      final input = NationalPensionInput(
+        fullContribution: 0,
+        fullExempt: 0,
+        threeQuarterExempt: 0,
+        halfExempt: 0,
+        quarterExempt: 0,
+        studentDeferment: 48,
+        hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
       expect(input.isValid(), true);
@@ -88,6 +108,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -101,6 +122,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -114,6 +136,21 @@ void main() {
         threeQuarterExempt: -1,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
+        hasPaymentSuspension: false,
+        desiredPensionStartAge: 65,
+      );
+      expect(input.isValid(), false);
+    });
+
+    test('studentDeferment が負数だと無効', () {
+      final input = NationalPensionInput(
+        fullContribution: 0,
+        fullExempt: 0,
+        threeQuarterExempt: 0,
+        halfExempt: 0,
+        quarterExempt: 0,
+        studentDeferment: -1,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -129,6 +166,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -143,6 +181,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -159,6 +198,7 @@ void main() {
         threeQuarterExempt: 100,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -173,6 +213,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 100,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -187,6 +228,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 100,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -203,6 +245,7 @@ void main() {
         threeQuarterExempt: 100,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -217,6 +260,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 100,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -231,6 +275,7 @@ void main() {
         threeQuarterExempt: 80,
         halfExempt: 80,
         quarterExempt: 40,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -247,11 +292,29 @@ void main() {
         threeQuarterExempt: 40,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
       // 300 + (160 × 1/2) + (40 × 5/8) = 300 + 80 + 25 = 405
       expect(input.effectiveContributionMonths, 405.0);
+      expect(input.isValid(), true);
+    });
+
+    test('学生納付特例（カウントされない）と免除の混合', () {
+      final input = NationalPensionInput(
+        fullContribution: 240,
+        fullExempt: 100,
+        threeQuarterExempt: 0,
+        halfExempt: 0,
+        quarterExempt: 0,
+        studentDeferment: 48,
+        hasPaymentSuspension: true,
+        desiredPensionStartAge: 65,
+      );
+      // 有効納付月数には studentDeferment は含まれない
+      // = 240 + (100 × 1/2) = 240 + 50 = 290
+      expect(input.effectiveContributionMonths, 290.0);
       expect(input.isValid(), true);
     });
   });
@@ -264,6 +327,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -277,6 +341,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -290,6 +355,7 @@ void main() {
         threeQuarterExempt: 160,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 60,
       );
@@ -304,8 +370,23 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 75,
+      );
+      expect(input.isValid(), true);
+    });
+
+    test('有効: 学生納付特例を含む', () {
+      final input = NationalPensionInput(
+        fullContribution: 240,
+        fullExempt: 0,
+        threeQuarterExempt: 0,
+        halfExempt: 0,
+        quarterExempt: 0,
+        studentDeferment: 48,
+        hasPaymentSuspension: false,
+        desiredPensionStartAge: 65,
       );
       expect(input.isValid(), true);
     });
@@ -317,6 +398,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 59,
       );
@@ -330,6 +412,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 76,
       );
@@ -343,6 +426,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -356,6 +440,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -363,23 +448,13 @@ void main() {
     });
 
     test('無効: 複合で480月超過', () {
-      final input = NationalPensionInput(
-        fullContribution: 250,
-        fullExempt: 368,
-        threeQuarterExempt: 0,
-        halfExempt: 0,
-        quarterExempt: 0,
-        hasPaymentSuspension: true,
-        desiredPensionStartAge: 65,
-      );
-      // effective = 250 + (368 × 1/2) = 250 + 184 = 434 (了義)
-      // 実際に超過させるには...
       final input2 = NationalPensionInput(
         fullContribution: 250,
         fullExempt: 462,
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -396,6 +471,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 60,
       );
@@ -409,6 +485,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 62,
       );
@@ -422,6 +499,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 64,
       );
@@ -435,6 +513,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -448,6 +527,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 66,
       );
@@ -461,6 +541,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 70,
       );
@@ -474,6 +555,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 75,
       );
@@ -487,6 +569,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 70,
       );
@@ -496,6 +579,7 @@ void main() {
         threeQuarterExempt: 80,
         halfExempt: 80,
         quarterExempt: 40,
+        studentDeferment: 48,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 70,
       );
@@ -548,6 +632,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -564,6 +649,7 @@ void main() {
         threeQuarterExempt: 60,
         halfExempt: 60,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -579,6 +665,7 @@ void main() {
         threeQuarterExempt: 100,
         halfExempt: 60,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 60,
       );
@@ -595,6 +682,7 @@ void main() {
         threeQuarterExempt: 40,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 75,
       );
@@ -611,11 +699,29 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
       expect(input.effectiveContributionMonths, 480.0);
       expect(input.getPensionAdjustmentRate(), 1.0);
+      expect(input.isValid(), true);
+    });
+
+    test('シナリオF: 学生期間と後の納付（学生納付特例48ヶ月+納付432ヶ月）', () {
+      final input = NationalPensionInput(
+        fullContribution: 432,
+        fullExempt: 0,
+        threeQuarterExempt: 0,
+        halfExempt: 0,
+        quarterExempt: 0,
+        studentDeferment: 48,
+        hasPaymentSuspension: false,
+        desiredPensionStartAge: 65,
+      );
+      // 学生納付特例は effectiveContributionMonths に含まれない
+      // effective = 432
+      expect(input.effectiveContributionMonths, 432.0);
       expect(input.isValid(), true);
     });
   });
@@ -628,6 +734,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: true,
         desiredPensionStartAge: 65,
       );
@@ -642,6 +749,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 65,
       );
@@ -659,6 +767,7 @@ void main() {
           threeQuarterExempt: 0,
           halfExempt: 0,
           quarterExempt: 0,
+          studentDeferment: 0,
           hasPaymentSuspension: false,
           desiredPensionStartAge: age,
         );
@@ -675,6 +784,7 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 60,
       );
@@ -688,10 +798,45 @@ void main() {
         threeQuarterExempt: 0,
         halfExempt: 0,
         quarterExempt: 0,
+        studentDeferment: 0,
         hasPaymentSuspension: false,
         desiredPensionStartAge: 75,
       );
       expect(input.getPensionAdjustmentRate(), greaterThan(1.0));
+    });
+  });
+
+  group('NationalPensionInput - 学生納付特例（studentDeferment）', () {
+    test('学生納付特例のみ: effectiveContributionMonths に含まれない', () {
+      final input = NationalPensionInput(
+        fullContribution: 0,
+        fullExempt: 0,
+        threeQuarterExempt: 0,
+        halfExempt: 0,
+        quarterExempt: 0,
+        studentDeferment: 48,
+        hasPaymentSuspension: false,
+        desiredPensionStartAge: 65,
+      );
+      // 学生納付特例はカウントされない
+      expect(input.effectiveContributionMonths, 0.0);
+      expect(input.isValid(), true);
+    });
+
+    test('学生納付特例と納付の混合', () {
+      final input = NationalPensionInput(
+        fullContribution: 240,
+        fullExempt: 0,
+        threeQuarterExempt: 0,
+        halfExempt: 0,
+        quarterExempt: 0,
+        studentDeferment: 48,
+        hasPaymentSuspension: false,
+        desiredPensionStartAge: 65,
+      );
+      // effective = 240（学生納付特例はカウントされない）
+      expect(input.effectiveContributionMonths, 240.0);
+      expect(input.isValid(), true);
     });
   });
 }
