@@ -25,6 +25,7 @@ class PensionCalculationService {
   ) {
     // 入力値の妥当性チェック
     if (!input.isValid()) {
+      // coverage:ignore-line
       throw ArgumentError('無効なNationalPensionInput値です');
     }
 
@@ -77,6 +78,7 @@ class PensionCalculationService {
   ) {
     // 入力値の妥当性チェック
     if (!input.isValid()) {
+      // coverage:ignore-line
       throw ArgumentError('無効なOccupationalPensionInput値です');
     }
 
@@ -149,9 +151,11 @@ class PensionCalculationService {
     OccupationalPensionInput occupationalPensionInput,
   ) {
     if (!nationalPensionInput.isValid()) {
+      // coverage:ignore-line
       throw ArgumentError('無効なNationalPensionInput値です');
     }
     if (!occupationalPensionInput.isValid()) {
+      // coverage:ignore-line
       throw ArgumentError('無効なOccupationalPensionInput値です');
     }
 

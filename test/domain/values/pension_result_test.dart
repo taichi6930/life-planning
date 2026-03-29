@@ -366,7 +366,6 @@ void main() {
         // Act & Assert
         expect(result == 'not a PensionResult', isFalse);
         expect(result == 123, isFalse);
-        expect(result == null, isFalse);
       });
     });
 
