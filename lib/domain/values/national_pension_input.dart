@@ -186,7 +186,7 @@ class NationalPensionInput {
 
   /// 受給開始の遅延・早期受給に基づく調整率を計算
   ///
-  /// 戻り値: 0.76～1.42 の範囲の倍率
+  /// 戻り値: 0.76～1.84 の範囲の倍率
   ///
   /// 【計算式】
   /// - 繰上げ受給（60～64歳）: 1.0 - (0.004 × (65 - desiredPensionStartAge) × 12)
@@ -196,6 +196,7 @@ class NationalPensionInput {
   /// 【例】
   /// - 60歳受給: 1.0 - (0.004 × 5 × 12) = 1.0 - 0.24 = 0.76 (76%)
   /// - 70歳受給: 1.0 + (0.007 × 5 × 12) = 1.0 + 0.42 = 1.42 (142%)
+  /// - 75歳受給: 1.0 + (0.007 × 10 × 12) = 1.0 + 0.84 = 1.84 (184%)
   double getPensionAdjustmentRate() {
     const double earlyReductionPerMonth = 0.004; // 繰上げ月0.4%減
     const double delayIncreasePerMonth = 0.007;  // 繰下げ月0.7%増

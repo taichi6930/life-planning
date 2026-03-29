@@ -370,14 +370,14 @@ class OccupationalPensionInput {
 
   /// 受給開始の遅延・早期受給に基づく調整率を計算
   ///
-  /// 戻り値: 0.76～1.42 の範囲の倍率
+  /// 戻り値: 0.76～1.84 の範囲の倍率
   ///
   /// 【計算式】
   /// - 繰上げ受給（60～64歳）: 1.0 - (0.004 × (65 - desiredPensionStartAge) × 12)
   /// - 標準受給（65歳）: 1.0
   /// - 繰下げ受給（66～75歳）: 1.0 + (0.007 × (desiredPensionStartAge - 65) × 12)
   ///
-  /// 国民年金と同じロジック
+  /// 国民年金と同じロジック（最大倍率は75歳受給時の1.84倍）
   double getPensionAdjustmentRate() {
     const double earlyReductionPerMonth = 0.004;
     const double delayIncreasePerMonth = 0.007;
