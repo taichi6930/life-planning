@@ -473,25 +473,25 @@ void main() {
     ///
     /// | No | 定数名                              | 期待値      | 説明                  |
     /// |----|-------------------------------------|-----------|----------------------|
-    /// | E1 | basicPensionMonthlyAmount           | 69,308.0  | 2025年度基本月額      |
-    /// | E2 | getCurrentBasicPensionAmount()      | 69,308.0  | 月額スタティック取得  |
-    /// | E3 | getCurrentBasicPensionAnnualAmount()| 831,696.0 | 月額 × 12             |
+    /// | E1 | basicPensionMonthlyAmount           | 70,608.0  | 2026年度基本月額      |
+    /// | E2 | getCurrentBasicPensionAmount()      | 70,608.0  | 月額スタティック取得  |
+    /// | E3 | getCurrentBasicPensionAnnualAmount()| 847,296.0 | 月額 × 12             |
     /// | E4 | 年額 = 月額 × 12の関係              | 一致       | 計算の整合性検証      |
-    test('basicPensionMonthlyAmount: 69,308円', () {
-      expect(NationalPensionInput.basicPensionMonthlyAmount, 69308.0);
+    test('basicPensionMonthlyAmount: 70,608円', () {
+      expect(NationalPensionInput.basicPensionMonthlyAmount, 70608.0);
     });
 
     test('getCurrentBasicPensionAmount(): 月額を返す', () {
       expect(
         NationalPensionInput.getCurrentBasicPensionAmount(),
-        69308.0,
+        70608.0,
       );
     });
 
-    test('getCurrentBasicPensionAnnualAmount(): 831,696円（月額×12）', () {
+    test('getCurrentBasicPensionAnnualAmount(): 847,296円（月額×12）', () {
       expect(
         NationalPensionInput.getCurrentBasicPensionAnnualAmount(),
-        831696.0,
+        847296.0,
       );
     });
 
