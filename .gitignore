@@ -79,6 +79,7 @@ Gemfile.lock
 coverage/
 .nyc_output/
 pytest_cache/
+check_coverage.py
 
 # Temporary files
 tmp/
