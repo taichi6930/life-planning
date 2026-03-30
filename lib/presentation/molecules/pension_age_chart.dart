@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-
-import '../providers/pension_provider.dart';
+import 'package:life_planning/application/dtos/pension_by_age_data.dart';
 
 /// 年齢別年金額の積み重ねた棒グラフ Molecule
 /// 
@@ -41,21 +40,23 @@ class PensionAgeChart extends StatelessWidget {
     }
 
     // グラフの最大値を計算（余裕を持たせて120%）
-    final maxValue = data!.map((d) => d.totalMonthly).reduce((a, b) => a > b ? a : b) * 1.2;
+    final maxValue = data!.map((d) => d.totalMonthly * 12).reduce((a, b) => a > b ? a : b) * 1.2;
 
     // BarChart のデータ作成（積み上げ棒グラフ）
     final barGroups = data!.map((d) {
       final ageIndex = data!.indexOf(d);
+      final basicAnnual = d.basicPensionMonthly * 12;
+      final totalAnnual = d.totalMonthly * 12;
       return BarChartGroupData(
         x: ageIndex,
         barRods: [
           BarChartRodData(
-            toY: d.totalMonthly,  // 基礎年金 + 厚生年金の合計
-            color: Colors.blue,   // 最下層（基礎年金）の色
+            toY: totalAnnual,  // 基礎年金 + 厚生年金の合計（年額）
+            color: Colors.blue,
             width: 16,
             rodStackItems: [
-              BarChartRodStackItem(0, d.basicPensionMonthly, Colors.blue),  // 基礎年金
-              BarChartRodStackItem(d.basicPensionMonthly, d.totalMonthly, Colors.orange),  // 厚生年金
+              BarChartRodStackItem(0, basicAnnual, Colors.blue),  // 基礎年金（年額）
+              BarChartRodStackItem(basicAnnual, totalAnnual, Colors.orange),  // 厚生年金（年額）
             ],
           ),
         ],
@@ -73,7 +74,7 @@ class PensionAgeChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '生涯年金額の推移（月額）',
+            '生涯年金額の推移（年額）',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -95,6 +96,7 @@ class PensionAgeChart extends StatelessWidget {
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (group) => Colors.black87,
+                    // coverage:ignore-start
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final age = data![groupIndex].age;
                       final basicPension = data![groupIndex].basicPensionMonthly;
@@ -102,10 +104,11 @@ class PensionAgeChart extends StatelessWidget {
                       final total = basicPension + occupationalPension;
                       
                       return BarTooltipItem(
-                        '基礎年金: ¥${basicPension.toStringAsFixed(0)}\n厚生年金: ¥${occupationalPension.toStringAsFixed(0)}\n合計: ¥${total.toStringAsFixed(0)}',
+                        '$age歳\n基礎年金: ¥${(basicPension * 12).toStringAsFixed(0)}\n厚生年金: ¥${(occupationalPension * 12).toStringAsFixed(0)}\n合計: ¥${(total * 12).toStringAsFixed(0)}',
                         const TextStyle(color: Colors.white, fontSize: 12),
                       );
                     },
+                    // coverage:ignore-end
                   ),
                 ),
                 titlesData: FlTitlesData(
@@ -170,7 +173,7 @@ class PensionAgeChart extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '※ グラフは各年齢で受給開始した場合の月額を表示します',
+            '※ グラフは各年齢で受給開始した場合の年額を表示します',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.grey[600],
             ),

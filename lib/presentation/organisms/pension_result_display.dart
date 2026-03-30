@@ -6,30 +6,24 @@ import '../molecules/result_card.dart';
 import '../providers/pension_provider.dart';
 
 /// 計算結果表示 Organism
-/// 
-/// Molecules: ResultCard、PensionAgeChart を使用して、計算結果を表示
+///
+/// Riverpod プロバイダを直接 watch し、計算結果を自律的に描画する。
+/// 親から結果値を props として受け取らず、provider の変更に反応する。
+///
+/// Molecules: ResultCard、PensionAgeChart を使用
 class PensionResultDisplay extends ConsumerWidget {
-  final String? nationalPensionYearly;
-  final String? nationalPensionMonthly;
-  final double? contributionRate;
   final bool isLoading;
 
   const PensionResultDisplay({
     super.key,
-    this.nationalPensionYearly,
-    this.nationalPensionMonthly,
-    this.contributionRate,
     this.isLoading = false,
   });
-
-  bool get _hasResults =>
-      nationalPensionYearly != null ||
-      nationalPensionMonthly != null ||
-      contributionRate != null;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final chartData = ref.watch(pensionByAgeChartProvider);
+    final formState = ref.watch(pensionFormNotifierProvider);
+    final result = formState.result;
 
     if (isLoading) {
       return const Center(
@@ -40,7 +34,7 @@ class PensionResultDisplay extends ConsumerWidget {
       );
     }
 
-    if (!_hasResults) {
+    if (result == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -55,6 +49,11 @@ class PensionResultDisplay extends ConsumerWidget {
       );
     }
 
+    // 表示用の文字列整形（Widget 層で実施）
+    final hasOccupationalPension = result.occupationalPensionMonthly > 0;
+    final rate = ref.watch(contributionRateProvider);
+    final rateText = rate != null ? '${(rate * 100).toStringAsFixed(1)}%' : '-';
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -64,26 +63,60 @@ class PensionResultDisplay extends ConsumerWidget {
             ResultCard(
               title: '基礎年金計算結果',
               results: {
-                '年額': nationalPensionYearly ?? '-',
-                '月額': nationalPensionMonthly ?? '-',
+                '年額': '¥${result.basicPensionAnnual.toStringAsFixed(0)}',
+                '月額': '¥${result.basicPensionMonthly.toStringAsFixed(0)}',
               },
               units: const {
                 '年額': '円',
                 '月額': '円',
               },
-              isHighlight: true,
+              isHighlight: !hasOccupationalPension,
+            ),
+            if (hasOccupationalPension) ...[
+              const SizedBox(height: 16),
+              ResultCard(
+                title: '厚生年金計算結果',
+                results: {
+                  '年額': '¥${result.occupationalPensionAnnual.toStringAsFixed(0)}',
+                  '月額': '¥${result.occupationalPensionMonthly.toStringAsFixed(0)}',
+                },
+                units: const {
+                  '年額': '円',
+                  '月額': '円',
+                },
+              ),
+              const SizedBox(height: 16),
+              ResultCard(
+                title: '合計年金額',
+                results: {
+                  '年額': '¥${result.totalPensionAnnual.toStringAsFixed(0)}',
+                  '月額': '¥${result.totalPensionMonthly.toStringAsFixed(0)}',
+                },
+                units: const {
+                  '年額': '円',
+                  '月額': '円',
+                },
+                isHighlight: true,
+              ),
+            ],
+            const SizedBox(height: 16),
+            ResultCard(
+              title: '計算条件',
+              results: {
+                '現在の年齢': '${formState.currentAge ?? '-'}歳',
+                '年金納付月数': '${formState.paymentMonths ?? '-'}ヶ月',
+                '厚生年金加入月数': '${formState.occupationalPaymentMonths}ヶ月',
+                '受給開始年齢': '${formState.desiredPensionStartAge}歳',
+              },
             ),
             const SizedBox(height: 16),
             ResultCard(
               title: '納付状況',
               results: {
-                '納付率': contributionRate != null
-                    ? '${(contributionRate! * 100).toStringAsFixed(1)}%'
-                    : '-',
+                '納付率': rateText,
               },
             ),
             const SizedBox(height: 24),
-            // グラフを追加
             PensionAgeChart(
               data: chartData,
               isLoading: isLoading,
@@ -94,3 +127,4 @@ class PensionResultDisplay extends ConsumerWidget {
     );
   }
 }
+

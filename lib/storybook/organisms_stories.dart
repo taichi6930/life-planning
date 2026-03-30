@@ -56,11 +56,9 @@ List<Story> organismsStories() => [
     builder: (context) => const ProviderScope(
       child: Padding(
         padding: EdgeInsets.all(16),
-        child: PensionResultDisplay(
-          nationalPensionYearly: '¥840,960',
-          nationalPensionMonthly: '¥70,080',
-          contributionRate: 0.75,
-        ),
+        // PensionResultDisplay は provider から自律的にデータを取得するため、
+        // 結果を表示するには ProviderScope 内で計算を実行する必要がある。
+        child: PensionResultDisplay(),
       ),
     ),
   ),

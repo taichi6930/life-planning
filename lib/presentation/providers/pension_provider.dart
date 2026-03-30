@@ -1,10 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/services/pension_calculation_service.dart';
-import '../../domain/values/national_pension_input.dart';
-import '../../domain/values/occupational_pension_input.dart';
+import '../../application/dtos/pension_by_age_data.dart';
+import '../../data/pension_local_storage.dart';
+import '../../domain/usecases/calculate_pension_use_case.dart';
 import '../../domain/values/pension_result.dart';
-import '../utils/pension_storage.dart';
+
+/// copyWith で「値を指定しなかった」と「null を指定した」を区別するための定数
+class _Sentinel {
+  const _Sentinel();
+}
+
+const _sentinel = _Sentinel();
 
 /// 年金計算フォームの状態管理
 /// 
@@ -41,8 +47,8 @@ class PensionFormState {
     int? bonus,
     int? desiredPensionStartAge,
     bool? isLoading,
-    PensionResult? result,
-    String? error,
+    Object? result = _sentinel,
+    Object? error = _sentinel,
   }) {
     return PensionFormState(
       currentAge: currentAge ?? this.currentAge,
@@ -52,8 +58,8 @@ class PensionFormState {
       bonus: bonus ?? this.bonus,
       desiredPensionStartAge: desiredPensionStartAge ?? this.desiredPensionStartAge,
       isLoading: isLoading ?? this.isLoading,
-      result: result ?? this.result,
-      error: error ?? this.error,
+      result: identical(result, _sentinel) ? this.result : result as PensionResult?,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
 }
@@ -93,6 +99,9 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
   }
 
   /// 年金計算を実行
+  ///
+  /// ビジネスロジックの選択は CalculatePensionUseCase に委譲。
+  /// 計算成功後、フォームデータを localStorage に保存する。
   Future<void> calculatePension() async {
     if (state.currentAge == null || state.paymentMonths == null) {
       state = state.copyWith(error: 'すべてのフィールドを入力してください');
@@ -102,44 +111,19 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // 厨生年金の有無によって計算を分別
-      PensionResult result;
-
-      if (state.occupationalPaymentMonths > 0 && state.monthlySalary != null && state.bonus != null) {
-        // 厨生年金がある場合、厨生年金を計算
-        final occupationalInput = OccupationalPensionInput(
-          enrollmentMonths: state.occupationalPaymentMonths,
-          averageMonthlyReward: state.monthlySalary!.toDouble(),
-          averageBonusReward: state.bonus!.toDouble(),
-          desiredPensionStartAge: state.desiredPensionStartAge,
-        );
-        result = PensionCalculationService.calculateOccupationalPension(occupationalInput);
-      } else {
-        // 基礎年金のみ計算
-        final nationalInput = NationalPensionInput(
-          fullContribution: state.paymentMonths!,
-          hasPaymentSuspension: false,
-          desiredPensionStartAge: state.desiredPensionStartAge,
-        );
-        result = PensionCalculationService.calculateNationalPension(nationalInput);
-      }
+      final result = CalculatePensionUseCase.execute(
+        paymentMonths: state.paymentMonths!,
+        desiredPensionStartAge: state.desiredPensionStartAge,
+        occupationalPaymentMonths: state.occupationalPaymentMonths,
+        monthlySalary: state.monthlySalary?.toDouble(),
+        bonus: state.bonus?.toDouble(),
+      );
 
       state = state.copyWith(
         result: result,
         isLoading: false,
       );
-      
-      // localStorageにForm データを保存
-      await PensionStorage.savePensionFormData(
-        currentAge: state.currentAge,
-        paymentMonths: state.paymentMonths,
-        occupationalPaymentMonths: state.occupationalPaymentMonths,
-        monthlySalary: state.monthlySalary,
-        bonus: state.bonus,
-        desiredPensionStartAge: state.desiredPensionStartAge,
-      );
-      
-      // 宅StorageにFormデータを保存
+
       await PensionStorage.savePensionFormData(
         currentAge: state.currentAge,
         paymentMonths: state.paymentMonths,
@@ -170,18 +154,18 @@ final pensionFormNotifierProvider =
   },
 );
 
-/// 計算済みの年単位の基礎年金を取得するプロバイダ
-final nationalPensionYearlyProvider = Provider<String?>((ref) {
-  final result = ref.watch(pensionFormNotifierProvider).result;
-  if (result == null) return null;
-  return '¥${result.basicPensionAnnual.toStringAsFixed(0)}';
+/// 計算済みの基礎年金年額を取得するプロバイダ（生値: 円）
+///
+/// 文字列整形は呼び出し元の Widget で行う。
+final nationalPensionYearlyProvider = Provider<double?>((ref) {
+  return ref.watch(pensionFormNotifierProvider).result?.basicPensionAnnual;
 });
 
-/// 計算済みの月単位の基礎年金を取得するプロバイダ
-final nationalPensionMonthlyProvider = Provider<String?>((ref) {
-  final result = ref.watch(pensionFormNotifierProvider).result;
-  if (result == null) return null;
-  return '¥${result.basicPensionMonthly.toStringAsFixed(0)}';
+/// 計算済みの基礎年金月額を取得するプロバイダ（生値: 円）
+///
+/// 文字列整形は呼び出し元の Widget で行う。
+final nationalPensionMonthlyProvider = Provider<double?>((ref) {
+  return ref.watch(pensionFormNotifierProvider).result?.basicPensionMonthly;
 });
 
 /// 納付率を取得するプロバイダ
@@ -190,22 +174,6 @@ final contributionRateProvider = Provider<double?>((ref) {
   if (state.paymentMonths == null) return null;
   return state.paymentMonths! / 480.0;
 });
-
-/// グラフ用：年齢別年金額データ
-/// 60歳から100歳までの受給開始年齢別に月額年金を計算
-class PensionByAgeData {
-  final int age;
-  final double basicPensionMonthly;
-  final double occupationalPensionMonthly;
-
-  PensionByAgeData({
-    required this.age,
-    required this.basicPensionMonthly,
-    required this.occupationalPensionMonthly,
-  });
-
-  double get totalMonthly => basicPensionMonthly + occupationalPensionMonthly;
-}
 
 /// 年齢別年金額グラフデータプロバイダ
 /// 
@@ -220,7 +188,7 @@ final pensionByAgeChartProvider = Provider<List<PensionByAgeData>?>((ref) {
   final chartData = <PensionByAgeData>[];
   
   // 60歳から100歳まで表示
-  final startAge = 60;
+  const startAge = 60;
   final startAgeOfPension = formState.desiredPensionStartAge;
   
   for (int age = startAge; age <= 100; age++) {
@@ -230,7 +198,7 @@ final pensionByAgeChartProvider = Provider<List<PensionByAgeData>?>((ref) {
     // 受給開始年齢以降のみ年金を表示
     if (age >= startAgeOfPension) {
       basicPension = result.basicPensionMonthly;
-      occupationalPension = result.occupationalPensionMonthly ?? 0.0;
+      occupationalPension = result.occupationalPensionMonthly;
     }
 
     chartData.add(

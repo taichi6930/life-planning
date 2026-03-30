@@ -60,18 +60,20 @@ class PensionCalculationService {
     );
   }
 
-  /// 厚生年金計算ロジック
+  /// 厚生年金計算ロジック（報酬比例部分＋加給年金のみ）
+  ///
+  /// 基礎年金は別途 calculateNationalPension() で計算する。
+  /// 両方を合算する場合は calculateCombinedPension() を使用する。
   ///
   /// 入力されたパラメータの妥当性を確認し、以下の計算を実行：
   ///
   /// 1. 報酬比例部分（2003年4月以降）を計算
   /// 2. 報酬比例部分（2003年3月以前）を計算（存在する場合）
   /// 3. 加給年金（配偶者・子）を計算
-  /// 4. 基礎年金部分を含める（厚生年金加入者は基礎年金も受給）
-  /// 5. 受給開始年齢に基づく調整率（繰上げ/繰下げ）を反映
-  /// 6. 月額から年額を計算
+  /// 4. 受給開始年齢に基づく調整率（繰上げ/繰下げ）を反映
+  /// 5. 月額から年額を計算
   ///
-  /// 戻り値: PensionResult
+  /// 戻り値: PensionResult（基礎年金部分は0）
   /// 例外: ArgumentError (入力値が不正な場合)
   static PensionResult calculateOccupationalPension(
     OccupationalPensionInput input,
@@ -107,36 +109,26 @@ class PensionCalculationService {
     final totalSupplementMonthly = spousalSupplement + childSupplement;
     final totalSupplementAnnual = totalSupplementMonthly * 12;
 
-    // 4. 基礎年金部分を含める（厚生年金加入者も基礎年金を受給対象）
-    final basicPensionMonthly = NationalPensionInput.getCurrentBasicPensionAmount();
-    final basicPensionAnnual = basicPensionMonthly * 12;
-
-    // 5. 受給開始年齢に基づく調整率を計算
+    // 4. 受給開始年齢に基づく調整率を計算
     final adjustmentRate = input.getPensionAdjustmentRate();
 
     // 報酬比例部分に調整率を適用（年額）
     final adjustedRemunerationBased = totalRemunerationBased * adjustmentRate;
 
-    // 基礎年金に調整率を適用（年額）
-    final adjustedBasicAnnual = basicPensionAnnual * adjustmentRate;
-
     // 加給年金に調整率を適用（年額）
     final adjustedSupplementAnnual = totalSupplementAnnual * adjustmentRate;
 
-    // 6. 月額を計算
-    final occupationalMonthlyWithoutBasic = (adjustedRemunerationBased + adjustedSupplementAnnual) / 12;
-    final basicMonthlyAdjusted = adjustedBasicAnnual / 12;
-    
-    final totalMonthly = basicMonthlyAdjusted + occupationalMonthlyWithoutBasic;
-    final totalAnnual = totalMonthly * 12;
+    // 5. 月額を計算（厚生年金部分のみ、基礎年金は含まない）
+    final occupationalMonthly = (adjustedRemunerationBased + adjustedSupplementAnnual) / 12;
+    final occupationalAnnual = adjustedRemunerationBased + adjustedSupplementAnnual;
 
     return PensionResult(
-      basicPensionMonthly: basicMonthlyAdjusted,
-      basicPensionAnnual: adjustedBasicAnnual,
-      occupationalPensionMonthly: occupationalMonthlyWithoutBasic,
-      occupationalPensionAnnual: adjustedRemunerationBased + adjustedSupplementAnnual,
-      totalPensionMonthly: totalMonthly,
-      totalPensionAnnual: totalAnnual,
+      basicPensionMonthly: 0.0,
+      basicPensionAnnual: 0.0,
+      occupationalPensionMonthly: occupationalMonthly,
+      occupationalPensionAnnual: occupationalAnnual,
+      totalPensionMonthly: occupationalMonthly,
+      totalPensionAnnual: occupationalAnnual,
       adjustmentRate: adjustmentRate,
       pensionStartAge: input.desiredPensionStartAge,
     );
@@ -144,24 +136,32 @@ class PensionCalculationService {
 
   /// 複合年金計算（基礎年金 + 厚生年金）
   ///
-  /// 両方の年金を受給する場合の統合結果を返す。
-  /// (実質的には厚生年金計算と同じだが、概念的に区別するために提供)
+  /// 基礎年金と厚生年金を別々に計算し、合算した結果を返す。
+  /// 基礎年金は納付月数に基づき、厚生年金は報酬比例部分＋加給年金。
   static PensionResult calculateCombinedPension(
     NationalPensionInput nationalPensionInput,
     OccupationalPensionInput occupationalPensionInput,
   ) {
-    if (!nationalPensionInput.isValid()) {
-      // coverage:ignore-line
-      throw ArgumentError('無効なNationalPensionInput値です');
-    }
-    if (!occupationalPensionInput.isValid()) {
-      // coverage:ignore-line
-      throw ArgumentError('無効なOccupationalPensionInput値です');
-    }
+    // 基礎年金を個別に計算（納付月数を反映）
+    final nationalResult = calculateNationalPension(nationalPensionInput);
 
-    // 厚生年金計算は既に基礎年金を含んでいるため、厚生年金側の計算を使用
-    // （厚生年金加入者は自動的に基礎年金も受給対象）
-    return calculateOccupationalPension(occupationalPensionInput);
+    // 厚生年金を個別に計算（報酬比例部分＋加給年金のみ）
+    final occupationalResult = calculateOccupationalPension(occupationalPensionInput);
+
+    // 合算
+    final totalMonthly = nationalResult.basicPensionMonthly + occupationalResult.occupationalPensionMonthly;
+    final totalAnnual = nationalResult.basicPensionAnnual + occupationalResult.occupationalPensionAnnual;
+
+    return PensionResult(
+      basicPensionMonthly: nationalResult.basicPensionMonthly,
+      basicPensionAnnual: nationalResult.basicPensionAnnual,
+      occupationalPensionMonthly: occupationalResult.occupationalPensionMonthly,
+      occupationalPensionAnnual: occupationalResult.occupationalPensionAnnual,
+      totalPensionMonthly: totalMonthly,
+      totalPensionAnnual: totalAnnual,
+      adjustmentRate: nationalResult.adjustmentRate,
+      pensionStartAge: nationalPensionInput.desiredPensionStartAge,
+    );
   }
 
   /// 子供手当の計算ロジック

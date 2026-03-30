@@ -264,14 +264,15 @@ void main() {
       // = (180,000,000 + 2,500,000) × 0.005481
       // = 182,500,000 × 0.005481 = 999,832.5
       
-      // 基礎年金：70,608 × 12 = 847,296
+      // 基礎年金は含まない（別途 calculateNationalPension で計算）
       
       // 調整率なし（65歳）
       // 厚生年金（報酬比例のみ、加給なし）： 999,832.5 / 12 = 83,319.375 月額
-      // 基礎年金（月額）： 70,608
-      // 合計月額：約153,927
+      // basicPensionMonthly は 0（厚生年金単体では基礎年金を含まない）
 
-      expect(result.totalPensionMonthly, greaterThan(150000));
+      expect(result.occupationalPensionMonthly, greaterThan(80000));
+      expect(result.basicPensionMonthly, equals(0.0));
+      expect(result.totalPensionMonthly, greaterThan(80000));
       expect(result.adjustmentRate, closeTo(1.0, 0.01));
     });
 
