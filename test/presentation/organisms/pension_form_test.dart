@@ -4,8 +4,8 @@ import 'package:life_planning/presentation/organisms/pension_form.dart';
 
 void main() {
   Widget buildTestWidget({
-    Function(int, int, int, int, int, int)? onSubmit,
-    Function(int, int, int, int, int, int)? onFieldChanged,
+    Function(int, int, int, int, int, int, int, double, int, int, int)? onSubmit,
+    Function(int, int, int, int, int, int, int, double, int, int, int)? onFieldChanged,
     bool isLoading = false,
     int? initialAge,
     int? initialPaymentMonths,
@@ -71,7 +71,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('65歳'), findsOneWidget);
-      expect(find.byType(Slider), findsOneWidget);
+      // iDeCo追加で Slider は3つ（受給開始年齢、想定利回り、想定寿命）
+      expect(find.byType(Slider), findsNWidgets(3));
     });
 
     testWidgets('ローディング中はボタンにインジケータが表示される', (WidgetTester tester) async {
@@ -97,7 +98,7 @@ void main() {
       // → _age==null なので SnackBar
       bool submitted = false;
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (a, m, o, s, b, d) => submitted = true,
+        onSubmit: (a, m, o, s, b, d, ic, ir, cb, le, ta) => submitted = true,
       ));
       await tester.pumpAndSettle();
 
@@ -109,6 +110,9 @@ void main() {
       await tester.enterText(ageField, '');
       await tester.pumpAndSettle();
 
+      // iDeCo追加でフォームが長くなりボタンが画面外になるためスクロール
+      await tester.ensureVisible(find.text('計算する'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('計算する'));
       await tester.pumpAndSettle();
 
@@ -119,7 +123,7 @@ void main() {
     testWidgets('ケース4: age=35, months=440 で計算ボタン → onSubmit呼出', (WidgetTester tester) async {
       List<int>? submittedValues;
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (a, m, o, s, b, d) {
+        onSubmit: (a, m, o, s, b, d, ic, ir, cb, le, ta) {
           submittedValues = [a, m, o, s, b, d];
         },
       ));
@@ -133,6 +137,8 @@ void main() {
       await tester.enterText(textFields.at(1), '440');
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('計算する'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('計算する'));
       await tester.pumpAndSettle();
 
@@ -144,7 +150,7 @@ void main() {
     testWidgets('ケース5: 全フィールド入力済で計算ボタン → 正しい値で onSubmit呼出', (WidgetTester tester) async {
       List<int>? submittedValues;
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (a, m, o, s, b, d) {
+        onSubmit: (a, m, o, s, b, d, ic, ir, cb, le, ta) {
           submittedValues = [a, m, o, s, b, d];
         },
       ));
@@ -162,6 +168,8 @@ void main() {
       await tester.enterText(textFields.at(4), '500000');
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('計算する'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('計算する'));
       await tester.pumpAndSettle();
 
@@ -176,7 +184,7 @@ void main() {
     testWidgets('年齢入力で onFieldChanged が呼ばれる', (WidgetTester tester) async {
       int callCount = 0;
       await tester.pumpWidget(buildTestWidget(
-        onFieldChanged: (a, m, o, s, b, d) => callCount++,
+        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => callCount++,
       ));
       await tester.pumpAndSettle();
       callCount = 0; // initState の addPostFrameCallback 分をリセット
@@ -202,7 +210,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         initialAge: 30,
         initialPaymentMonths: 360,
-        onFieldChanged: (a, m, o, s, b, d) => lastOccMonths = o,
+        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => lastOccMonths = o,
       ));
       await tester.pumpAndSettle();
 
@@ -221,7 +229,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         initialAge: 30,
         initialPaymentMonths: 360,
-        onFieldChanged: (a, m, o, s, b, d) => inputCount++,
+        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => inputCount++,
       ));
       await tester.pumpAndSettle();
       inputCount = 0;
@@ -303,7 +311,7 @@ void main() {
         initialAge: 30,
         initialPaymentMonths: 360,
         initialDesiredPensionStartAge: 65,
-        onFieldChanged: (a, m, o, s, b, d) => lastStartAge = d,
+        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => lastStartAge = d,
       ));
       await tester.pumpAndSettle();
 
@@ -311,8 +319,8 @@ void main() {
       expect(find.text('65歳'), findsOneWidget);
 
       // スライダーをドラッグ（右方向にオフセット → 年齢が上がる）
-      final slider = find.byType(Slider);
-      // Slider の幅の中で右方向にドラッグすると値が増加する
+      // iDeCo追加で Slider が3つあるため最初の受給開始年齢スライダーを指定
+      final slider = find.byType(Slider).first;
       await tester.drag(slider, const Offset(100, 0));
       await tester.pumpAndSettle();
 

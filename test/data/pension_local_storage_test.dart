@@ -8,7 +8,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('初期状態では全てnull（desiredPensionStartAgeはデフォルト65）', () async {
+    test('初期状態では全てnull（desiredPensionStartAgeはデフォルト65、idecoCurrentBalanceはデフォルト0）', () async {
       final data = await PensionStorage.loadPensionFormData();
 
       expect(data.currentAge, isNull);
@@ -17,6 +17,7 @@ void main() {
       expect(data.monthlySalary, isNull);
       expect(data.bonus, isNull);
       expect(data.desiredPensionStartAge, equals(65));
+      expect(data.idecoCurrentBalance, equals(0));
     });
 
     test('全フィールドを保存して読み込めること', () async {
@@ -27,6 +28,7 @@ void main() {
         monthlySalary: 300000,
         bonus: 500000,
         desiredPensionStartAge: 70,
+        idecoCurrentBalance: 2000000,
       );
 
       final data = await PensionStorage.loadPensionFormData();
@@ -37,6 +39,7 @@ void main() {
       expect(data.monthlySalary, equals(300000));
       expect(data.bonus, equals(500000));
       expect(data.desiredPensionStartAge, equals(70));
+      expect(data.idecoCurrentBalance, equals(2000000));
     });
 
     test('一部のフィールドだけ保存した場合、未保存はnul', () async {
@@ -63,6 +66,7 @@ void main() {
         monthlySalary: 300000,
         bonus: 500000,
         desiredPensionStartAge: 70,
+        idecoCurrentBalance: 1500000,
       );
 
       await PensionStorage.clearPensionFormData();
@@ -75,6 +79,7 @@ void main() {
       expect(data.monthlySalary, isNull);
       expect(data.bonus, isNull);
       expect(data.desiredPensionStartAge, equals(65));
+      expect(data.idecoCurrentBalance, equals(0));
     });
 
     test('nullフィールドは保存をスキップする', () async {
@@ -93,37 +98,6 @@ void main() {
       final data = await PensionStorage.loadPensionFormData();
       expect(data.currentAge, equals(35));
       expect(data.paymentMonths, equals(360));
-    });
-  });
-
-  group('PensionFormDataMap', () {
-    test('デフォルト値が正しい', () {
-      final map = PensionFormDataMap();
-
-      expect(map.currentAge, isNull);
-      expect(map.paymentMonths, isNull);
-      expect(map.occupationalPaymentMonths, isNull);
-      expect(map.monthlySalary, isNull);
-      expect(map.bonus, isNull);
-      expect(map.desiredPensionStartAge, equals(65));
-    });
-
-    test('全パラメータを指定して生成できる', () {
-      final map = PensionFormDataMap(
-        currentAge: 30,
-        paymentMonths: 240,
-        occupationalPaymentMonths: 120,
-        monthlySalary: 250000,
-        bonus: 400000,
-        desiredPensionStartAge: 68,
-      );
-
-      expect(map.currentAge, equals(30));
-      expect(map.paymentMonths, equals(240));
-      expect(map.occupationalPaymentMonths, equals(120));
-      expect(map.monthlySalary, equals(250000));
-      expect(map.bonus, equals(400000));
-      expect(map.desiredPensionStartAge, equals(68));
     });
   });
 }
