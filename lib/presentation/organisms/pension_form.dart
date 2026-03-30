@@ -404,13 +404,13 @@ class _PensionFormState extends State<PensionForm> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 suffix: const Text('円'),
-                helperText: '上限: 自営業68,000円 / 会社員23,000円 / 企業型DC加入20,000円',
+                helperText: '上限: 自営業75,000円 / 会社員62,000円（2026年12月改正予定）',
                 helperMaxLines: 2,
               ),
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 final amount = int.tryParse(value);
-                if (amount != null && amount >= 0 && amount <= 68000) {
+                if (amount != null && amount >= 0 && amount <= 75000) {
                   setState(() {
                     _idecoMonthlyContribution = amount;
                     _notifyFieldChange();
