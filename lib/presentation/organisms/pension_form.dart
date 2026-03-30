@@ -209,7 +209,7 @@ class _PensionFormState extends State<PensionForm> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        '${_desiredPensionStartAge}歳',
+                        '$_desiredPensionStartAge歳',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.blue,
                           fontWeight: FontWeight.bold,

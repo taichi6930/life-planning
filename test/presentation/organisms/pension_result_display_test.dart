@@ -59,7 +59,7 @@ void main() {
                   // テスト用にNotifierに値を設定
                   return Builder(
                     builder: (context) {
-                      return PensionResultDisplay(isLoading: false);
+                      return const PensionResultDisplay(isLoading: false);
                     },
                   );
                 },
@@ -89,7 +89,7 @@ void main() {
 
     testWidgets('ケース4: 厚生年金含む結果が表示される（基礎+厚生+合計）', (WidgetTester tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        const ProviderScope(
           child: MaterialApp(
             home: Scaffold(
               body: PensionResultDisplay(isLoading: false),
@@ -121,7 +121,7 @@ void main() {
 
     testWidgets('計算条件に現在の年齢と納付月数が表示される', (WidgetTester tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        const ProviderScope(
           child: MaterialApp(
             home: Scaffold(
               body: PensionResultDisplay(isLoading: false),
@@ -145,7 +145,7 @@ void main() {
 
     testWidgets('納付率が正しく表示される', (WidgetTester tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        const ProviderScope(
           child: MaterialApp(
             home: Scaffold(
               body: PensionResultDisplay(isLoading: false),
