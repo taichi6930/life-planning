@@ -364,7 +364,9 @@ void main() {
         );
 
         // Act & Assert
+        // ignore: unrelated_type_equality_checks
         expect(result == 'not a PensionResult', isFalse);
+        // ignore: unrelated_type_equality_checks
         expect(result == 123, isFalse);
       });
     });

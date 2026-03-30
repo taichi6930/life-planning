@@ -120,9 +120,30 @@ ageAtGoal = currentAge + yearsToGoal
 - 受給開始までの年数
 - 納付率
 
+### データ永続化（localStorage）
+ユーザーが入力したフォームデータを自動的にブラウザのローカルストレージに保存します。
+
+**保存される情報**:
+- 現在の年齢
+- 年金納付月数
+- 厚生年金納付月数
+- 月額给与
+- ボーナス額（年額）
+- 希望する年金受給開始年齢
+
+**機能**:
+- フォーム送信時に自動保存
+- アプリ再起動時に前回の入力値を自動復元
+- ローカルストレージのクリア機能（アプリ内）
+
+**実装詳細**:
+- `shared_preferences` パッケージを使用
+- `PensionStorage` ユーティリティクラスで統一管理
+- `PensionFormTemplate` で初期化時に自動読み込み
+
 ---
 
-## テスト（実装予定）
+## テスト実行
 
 ```bash
 # ユニットテスト実行
@@ -130,6 +151,18 @@ flutter test
 
 # カバレッジ確認
 flutter test --coverage
+```
+
+## ローカル環境テスト
+
+```bash
+# ローカルテスト環境でアプリを起動（ポート30000で固定）
+flutter run -d chrome --web-port 30000
+
+# または、スクリプトを使用
+./run-test.sh  # または ./run-production.sh
+
+# ブラウザで http://localhost:30000 にアクセス
 ```
 
 ---
@@ -177,7 +210,11 @@ dependencies:
 - [x] Domain層スケルトン（Coast FI + 基礎年金）
 - [x] Usecase層実装（Coast FI + 基礎年金）
 - [x] Application層（DTO/Presenter）
-- [ ] Data層実装
-- [ ] Presentation層実装
-- [ ] テスト実装
+- [x] Presentation層実装（Atomic Design + Riverpod）
+  - [x] 国民年金計算UI
+  - [x] 厚生年金計算UI
+  - [x] 年金受給開始年齢スライダー
+  - [x] 生涯年金額グラフ表示
+  - [x] **データ永続化（localStorage）**
+- [x] テスト実装（224 tests passing）
 - [ ] Cloudflare デプロイ

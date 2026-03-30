@@ -200,8 +200,8 @@ void main() {
 
       // 有効月数 = 300 + (60 × 1/2) + (60 × 5/8) + (40 × 3/4) + (20 × 7/8)
       //         = 300 + 30 + 37.5 + 30 + 17.5 = 415
-      final effectiveMonths = 415.0;
-      final expectedMonthly = 70608.0 * (effectiveMonths / 480);
+      const effectiveMonths = 415.0;
+      const expectedMonthly = 70608.0 * (effectiveMonths / 480);
       expect(result.basicPensionMonthly, closeTo(expectedMonthly, 1.0));
     });
 
@@ -264,14 +264,15 @@ void main() {
       // = (180,000,000 + 2,500,000) × 0.005481
       // = 182,500,000 × 0.005481 = 999,832.5
       
-      // 基礎年金：70,608 × 12 = 847,296
+      // 基礎年金は含まない（別途 calculateNationalPension で計算）
       
       // 調整率なし（65歳）
       // 厚生年金（報酬比例のみ、加給なし）： 999,832.5 / 12 = 83,319.375 月額
-      // 基礎年金（月額）： 70,608
-      // 合計月額：約153,927
+      // basicPensionMonthly は 0（厚生年金単体では基礎年金を含まない）
 
-      expect(result.totalPensionMonthly, greaterThan(150000));
+      expect(result.occupationalPensionMonthly, greaterThan(80000));
+      expect(result.basicPensionMonthly, equals(0.0));
+      expect(result.totalPensionMonthly, greaterThan(80000));
       expect(result.adjustmentRate, closeTo(1.0, 0.01));
     });
 
@@ -306,7 +307,7 @@ void main() {
       // 配偶者加給：19,175
       // 子2人（第1・2子）：6,391.67 × 2 = 12,783.34
       // 合計加給：19,175 + 12,783.34 = 31,958.34
-      final expectedSupplementMonthly = 
+      const expectedSupplementMonthly = 
           OccupationalPensionInput.spousalSupplementMonthly + 
           (OccupationalPensionInput.childSupplementFirst2ndMonthly * 2);
       
@@ -326,7 +327,7 @@ void main() {
 
       // 子3人：第1・2子 + 第3子
       // = 6,391.67 × 2 + 2,133.33 × 1 = 14,916.67
-      final expectedChildSupplementMonthly = 
+      const expectedChildSupplementMonthly = 
           (OccupationalPensionInput.childSupplementFirst2ndMonthly * 2) + 
           OccupationalPensionInput.childSupplementThirdMonthly;
       
