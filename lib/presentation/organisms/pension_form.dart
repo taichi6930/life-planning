@@ -207,7 +207,13 @@ class _PensionFormState extends State<PensionForm> {
   }
 
   void _handleSubmit() {
-    if (_age == null || _paymentMonths == null || _occupationalPaymentMonths == null || _monthlySalary == null || _bonus == null || _desiredPensionStartAge == null) {
+    final age = _age;
+    final paymentMonths = _paymentMonths;
+    final occupationalPaymentMonths = _occupationalPaymentMonths;
+    final monthlySalary = _monthlySalary;
+    final bonus = _bonus;
+    final desiredPensionStartAge = _desiredPensionStartAge;
+    if (age == null || paymentMonths == null || occupationalPaymentMonths == null || monthlySalary == null || bonus == null || desiredPensionStartAge == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('すべてのフィールドを入力してください'),
@@ -216,41 +222,41 @@ class _PensionFormState extends State<PensionForm> {
       );
       return;
     }
-    // null チェック後、local 変数に代入（Dart null safety対応）
-    final age = _age!;
-    final paymentMonths = _paymentMonths!;
-    final occupationalPaymentMonths = _occupationalPaymentMonths!;
-    final monthlySalary = _monthlySalary!;
-    final bonus = _bonus!;
-    final desiredPensionStartAge = _desiredPensionStartAge!;
     // コールバックを呼ぶ（親に処理を委譲）
     widget.onSubmit?.call(age, paymentMonths, occupationalPaymentMonths, monthlySalary, bonus, desiredPensionStartAge, _idecoMonthlyContribution, _idecoAnnualReturnRate, _idecoCurrentBalance, _monthlyLivingExpenses, _targetAge);
   }
 
   /// フィールド値が変更されたときに親に通知
   void _notifyFieldChange() {
+    final age = _age;
+    final paymentMonths = _paymentMonths;
+    final occupationalPaymentMonths = _occupationalPaymentMonths;
+    final monthlySalary = _monthlySalary;
+    final bonus = _bonus;
+    final desiredPensionStartAge = _desiredPensionStartAge;
     // 最低限、重要な5つのフィールドが揃っていれば計算を実行する
     // デフォルト値があるため、通常は常に揃っている
-    if (_age != null && 
-        _paymentMonths != null && 
-        _occupationalPaymentMonths != null && 
-        _monthlySalary != null && 
-        _bonus != null && 
-        _desiredPensionStartAge != null) {
-      widget.onFieldChanged?.call(
-        _age!,
-        _paymentMonths!,
-        _occupationalPaymentMonths!,
-        _monthlySalary!,
-        _bonus!,
-        _desiredPensionStartAge!,
-        _idecoMonthlyContribution,
-        _idecoAnnualReturnRate,
-        _idecoCurrentBalance,
-        _monthlyLivingExpenses,
-        _targetAge,
-      );
+    if (age == null ||
+        paymentMonths == null ||
+        occupationalPaymentMonths == null ||
+        monthlySalary == null ||
+        bonus == null ||
+        desiredPensionStartAge == null) {
+      return;
     }
+    widget.onFieldChanged?.call(
+      age,
+      paymentMonths,
+      occupationalPaymentMonths,
+      monthlySalary,
+      bonus,
+      desiredPensionStartAge,
+      _idecoMonthlyContribution,
+      _idecoAnnualReturnRate,
+      _idecoCurrentBalance,
+      _monthlyLivingExpenses,
+      _targetAge,
+    );
   }
 
   @override

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:life_planning/application/dtos/pension_by_age_data.dart';
 import 'package:life_planning/domain/values/pension_result.dart';
 import 'package:life_planning/presentation/organisms/pension_result_display.dart';
 

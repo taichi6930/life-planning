@@ -44,7 +44,8 @@ class PensionResultDisplay extends StatelessWidget {
       );
     }
 
-    if (result == null) {
+    final r = result;
+    if (r == null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -59,11 +60,12 @@ class PensionResultDisplay extends StatelessWidget {
       );
     }
 
+    final rate = contributionRate;
     // 表示用の文字列整形（Widget 層で実施）
-    final hasOccupationalPension = result!.occupationalPensionMonthly > 0;
-    final hasIdecoPension = result!.idecoMonthly > 0;
-    final hasShortfallAnalysis = result!.monthlyLivingExpenses > 0 && result!.idecoFutureValue > 0;
-    final rateText = contributionRate != null ? '${(contributionRate! * 100).toStringAsFixed(1)}%' : '-';
+    final hasOccupationalPension = r.occupationalPensionMonthly > 0;
+    final hasIdecoPension = r.idecoMonthly > 0;
+    final hasShortfallAnalysis = r.monthlyLivingExpenses > 0 && r.idecoFutureValue > 0;
+    final rateText = rate != null ? '${(rate * 100).toStringAsFixed(1)}%' : '-';
 
     return SingleChildScrollView(
       child: Padding(
@@ -79,8 +81,8 @@ class PensionResultDisplay extends StatelessWidget {
             ResultCard(
               title: '基礎年金計算結果',
               results: {
-                '年額': '¥${result!.basicPensionAnnual.toStringAsFixed(0)}',
-                '月額': '¥${result!.basicPensionMonthly.toStringAsFixed(0)}',
+                '年額': '¥${r.basicPensionAnnual.toStringAsFixed(0)}',
+                '月額': '¥${r.basicPensionMonthly.toStringAsFixed(0)}',
               },
               units: const {
                 '年額': '円',
@@ -93,8 +95,8 @@ class PensionResultDisplay extends StatelessWidget {
               ResultCard(
                 title: '厚生年金計算結果',
                 results: {
-                  '年額': '¥${result!.occupationalPensionAnnual.toStringAsFixed(0)}',
-                  '月額': '¥${result!.occupationalPensionMonthly.toStringAsFixed(0)}',
+                  '年額': '¥${r.occupationalPensionAnnual.toStringAsFixed(0)}',
+                  '月額': '¥${r.occupationalPensionMonthly.toStringAsFixed(0)}',
                 },
                 units: const {
                   '年額': '円',
@@ -107,8 +109,8 @@ class PensionResultDisplay extends StatelessWidget {
               ResultCard(
                 title: 'iDeCo 不足分補填',
                 results: {
-                  'iDeCo積立額': '¥${result!.idecoFutureValue.toStringAsFixed(0)}',
-                  '月額引出額': '¥${result!.idecoMonthly.toStringAsFixed(0)}',
+                  'iDeCo積立額': '¥${r.idecoFutureValue.toStringAsFixed(0)}',
+                  '月額引出額': '¥${r.idecoMonthly.toStringAsFixed(0)}',
                 },
                 units: const {
                   'iDeCo積立額': '円',
@@ -121,12 +123,12 @@ class PensionResultDisplay extends StatelessWidget {
               ResultCard(
                 title: '生活費充足判定',
                 results: {
-                  '月額生活費': '¥${result!.monthlyLivingExpenses.toStringAsFixed(0)}',
-                  '公的年金月額': '¥${result!.publicPensionMonthly.toStringAsFixed(0)}',
-                  '月額不足分': '¥${result!.monthlyShortfall.toStringAsFixed(0)}',
-                  'iDeCo枯渇年齢': result!.idecoExhaustionAge.isInfinite ? '生涯枯渇なし' : '${result!.idecoExhaustionAge.toStringAsFixed(1)}歳',
-                  '想定寿命': '${result!.targetAge}歳',
-                  '判定': result!.isIdecoSufficient ? '✅ 足りる' : '❌ 足りない',
+                  '月額生活費': '¥${r.monthlyLivingExpenses.toStringAsFixed(0)}',
+                  '公的年金月額': '¥${r.publicPensionMonthly.toStringAsFixed(0)}',
+                  '月額不足分': '¥${r.monthlyShortfall.toStringAsFixed(0)}',
+                  'iDeCo枯渇年齢': r.idecoExhaustionAge.isInfinite ? '生涯枯渇なし' : '${r.idecoExhaustionAge.toStringAsFixed(1)}歳',
+                  '想定寿命': '${r.targetAge}歳',
+                  '判定': r.isIdecoSufficient ? '✅ 足りる' : '❌ 足りない',
                 },
                 units: const {
                   '月額生活費': '円',
@@ -141,8 +143,8 @@ class PensionResultDisplay extends StatelessWidget {
               ResultCard(
                 title: '合計年金額',
                 results: {
-                  '年額': '¥${result!.totalPensionAnnual.toStringAsFixed(0)}',
-                  '月額': '¥${result!.totalPensionMonthly.toStringAsFixed(0)}',
+                  '年額': '¥${r.totalPensionAnnual.toStringAsFixed(0)}',
+                  '月額': '¥${r.totalPensionMonthly.toStringAsFixed(0)}',
                 },
                 units: const {
                   '年額': '円',
@@ -157,8 +159,8 @@ class PensionResultDisplay extends StatelessWidget {
               results: {
                 '現在の年齢': '${currentAge ?? '-'}歳',
                 '年金納付月数': '${paymentMonths ?? '-'}ヶ月',
-                '厚生年金加入月数': '${occupationalPaymentMonths}ヶ月',
-                '受給開始年齢': '${desiredPensionStartAge}歳',
+                '厚生年金加入月数': '$occupationalPaymentMonths ヶ月',
+                '受給開始年齢': '$desiredPensionStartAge 歳',
               },
             ),
             const SizedBox(height: 16),
