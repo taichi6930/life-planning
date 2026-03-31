@@ -1,4 +1,5 @@
 import '../services/pension_calculation_service.dart';
+import '../values/ideco_input.dart';
 import '../values/national_pension_input.dart';
 import '../values/occupational_pension_input.dart';
 import '../values/pension_result.dart';
@@ -26,6 +27,12 @@ class CalculatePensionUseCase {
   /// [occupationalPaymentMonths] 厚生年金加入月数（0の場合は基礎年金のみ）
   /// [monthlySalary] 標準報酬月額（厚生年金がある場合のみ有効）
   /// [bonus] 年間賞与（厚生年金がある場合のみ有効）
+  /// [idecoMonthlyContribution] iDeCo月額拠出額（0の場合はiDeCo計算なし）
+  /// [idecoCurrentAge] iDeCo加入者の現在年齢
+  /// [idecoAnnualReturnRate] iDeCo想定年利回り（%）
+  /// [idecoCurrentBalance] iDeCo現在の投資残高（円）
+  /// [monthlyLivingExpenses] 月額生活費（円）
+  /// [targetAge] 想定寿命（歳）
   ///
   /// Returns [PensionResult]
   static PensionResult execute({
@@ -34,6 +41,12 @@ class CalculatePensionUseCase {
     int occupationalPaymentMonths = 0,
     double? monthlySalary,
     double? bonus,
+    int idecoMonthlyContribution = 0,
+    int idecoCurrentAge = 30,
+    double idecoAnnualReturnRate = 3.0,
+    int idecoCurrentBalance = 0,
+    int monthlyLivingExpenses = 0,
+    int targetAge = 90,
   }) {
     final nationalInput = NationalPensionInput(
       fullContribution: paymentMonths,
@@ -41,9 +54,53 @@ class CalculatePensionUseCase {
       desiredPensionStartAge: desiredPensionStartAge,
     );
 
-    if (occupationalPaymentMonths > 0 &&
+    final hasOccupational = occupationalPaymentMonths > 0 &&
         monthlySalary != null &&
-        bonus != null) {
+        bonus != null;
+
+    // iDeCoは60歳（minPensionReceiptAge）から受給開始が前提なので、
+    // 現役拠出中（currentAge < 60）または既存残高がある場合にiDeCo計算を実行する
+    final hasIdeco = idecoCurrentAge >= IdecoInput.minJoinAge &&
+        (idecoMonthlyContribution > 0 &&
+                idecoCurrentAge < IdecoInput.minPensionReceiptAge ||
+            idecoCurrentBalance > 0);
+
+    if (hasIdeco) {
+      final idecoInput = IdecoInput(
+        monthlyContribution: idecoMonthlyContribution,
+        currentAge: idecoCurrentAge,
+        expectedAnnualReturnRate: idecoAnnualReturnRate,
+        // pensionStartAge はデフォルト（minPensionReceiptAge = 60歳）を使用
+        // 公的年金受給開始年齢（desiredPensionStartAge）とは独立して
+        // iDeCoは常に60歳から受給開始とする
+        currentBalance: idecoCurrentBalance,
+      );
+
+      if (hasOccupational) {
+        final occupationalInput = OccupationalPensionInput(
+          enrollmentMonths: occupationalPaymentMonths,
+          averageMonthlyReward: monthlySalary,
+          averageBonusReward: bonus,
+          desiredPensionStartAge: desiredPensionStartAge,
+        );
+        return PensionCalculationService.calculateCombinedPensionWithIdeco(
+          nationalInput,
+          occupationalInput,
+          idecoInput,
+          monthlyLivingExpenses: monthlyLivingExpenses.toDouble(),
+          targetAge: targetAge,
+        );
+      } else {
+        return PensionCalculationService.calculateNationalPensionWithIdeco(
+          nationalInput,
+          idecoInput,
+          monthlyLivingExpenses: monthlyLivingExpenses.toDouble(),
+          targetAge: targetAge,
+        );
+      }
+    }
+
+    if (hasOccupational) {
       final occupationalInput = OccupationalPensionInput(
         enrollmentMonths: occupationalPaymentMonths,
         averageMonthlyReward: monthlySalary,

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/dtos/pension_by_age_data.dart';
+import '../../application/usecases/build_pension_chart_use_case.dart';
 import '../../data/pension_local_storage.dart';
 import '../../domain/usecases/calculate_pension_use_case.dart';
 import '../../domain/values/pension_result.dart';
@@ -22,6 +23,11 @@ class PensionFormState {
   final int? monthlySalary;
   final int? bonus;
   final int desiredPensionStartAge;
+  final int idecoMonthlyContribution;
+  final double idecoAnnualReturnRate;
+  final int idecoCurrentBalance;
+  final int monthlyLivingExpenses;
+  final int targetAge;
   final bool isLoading;
   final PensionResult? result;
   final String? error;
@@ -33,6 +39,11 @@ class PensionFormState {
     this.monthlySalary,
     this.bonus,
     this.desiredPensionStartAge = 65,
+    this.idecoMonthlyContribution = 0,
+    this.idecoAnnualReturnRate = 3.0,
+    this.idecoCurrentBalance = 0,
+    this.monthlyLivingExpenses = 0,
+    this.targetAge = 90,
     this.isLoading = false,
     this.result,
     this.error,
@@ -46,6 +57,11 @@ class PensionFormState {
     int? monthlySalary,
     int? bonus,
     int? desiredPensionStartAge,
+    int? idecoMonthlyContribution,
+    double? idecoAnnualReturnRate,
+    int? idecoCurrentBalance,
+    int? monthlyLivingExpenses,
+    int? targetAge,
     bool? isLoading,
     Object? result = _sentinel,
     Object? error = _sentinel,
@@ -57,6 +73,11 @@ class PensionFormState {
       monthlySalary: monthlySalary ?? this.monthlySalary,
       bonus: bonus ?? this.bonus,
       desiredPensionStartAge: desiredPensionStartAge ?? this.desiredPensionStartAge,
+      idecoMonthlyContribution: idecoMonthlyContribution ?? this.idecoMonthlyContribution,
+      idecoAnnualReturnRate: idecoAnnualReturnRate ?? this.idecoAnnualReturnRate,
+      idecoCurrentBalance: idecoCurrentBalance ?? this.idecoCurrentBalance,
+      monthlyLivingExpenses: monthlyLivingExpenses ?? this.monthlyLivingExpenses,
+      targetAge: targetAge ?? this.targetAge,
       isLoading: isLoading ?? this.isLoading,
       result: identical(result, _sentinel) ? this.result : result as PensionResult?,
       error: identical(error, _sentinel) ? this.error : error as String?,
@@ -98,6 +119,31 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
     state = state.copyWith(desiredPensionStartAge: age);
   }
 
+  /// iDeCo月額拠出額を更新
+  void setIdecoMonthlyContribution(int amount) {
+    state = state.copyWith(idecoMonthlyContribution: amount);
+  }
+
+  /// iDeCo想定年利回りを更新
+  void setIdecoAnnualReturnRate(double rate) {
+    state = state.copyWith(idecoAnnualReturnRate: rate);
+  }
+
+  /// iDeCo現在の投資残高を更新
+  void setIdecoCurrentBalance(int amount) {
+    state = state.copyWith(idecoCurrentBalance: amount);
+  }
+
+  /// 月額生活費を更新
+  void setMonthlyLivingExpenses(int amount) {
+    state = state.copyWith(monthlyLivingExpenses: amount);
+  }
+
+  /// 想定寿命を更新
+  void setTargetAge(int age) {
+    state = state.copyWith(targetAge: age);
+  }
+
   /// 年金計算を実行
   ///
   /// ビジネスロジックの選択は CalculatePensionUseCase に委譲。
@@ -117,6 +163,12 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
         occupationalPaymentMonths: state.occupationalPaymentMonths,
         monthlySalary: state.monthlySalary?.toDouble(),
         bonus: state.bonus?.toDouble(),
+        idecoMonthlyContribution: state.idecoMonthlyContribution,
+        idecoCurrentAge: state.currentAge!,
+        idecoAnnualReturnRate: state.idecoAnnualReturnRate,
+        idecoCurrentBalance: state.idecoCurrentBalance,
+        monthlyLivingExpenses: state.monthlyLivingExpenses,
+        targetAge: state.targetAge,
       );
 
       state = state.copyWith(
@@ -131,6 +183,11 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
         monthlySalary: state.monthlySalary,
         bonus: state.bonus,
         desiredPensionStartAge: state.desiredPensionStartAge,
+        idecoMonthlyContribution: state.idecoMonthlyContribution,
+        idecoAnnualReturnRate: state.idecoAnnualReturnRate,
+        idecoCurrentBalance: state.idecoCurrentBalance,
+        monthlyLivingExpenses: state.monthlyLivingExpenses,
+        targetAge: state.targetAge,
       );
     } catch (e) {
       state = state.copyWith(
@@ -176,39 +233,17 @@ final contributionRateProvider = Provider<double?>((ref) {
 });
 
 /// 年齢別年金額グラフデータプロバイダ
-/// 
-/// 60歳から100歳までの人生における年金額を表示
-/// 受給開始年齢前は0円、受給開始年齢以降は実際の年金額を表示
+///
+/// 60歳から100歳までの人生における年金額を表示する。
+/// グラフデータの組み立てロジックは [BuildPensionChartUseCase] に委譲。
 final pensionByAgeChartProvider = Provider<List<PensionByAgeData>?>((ref) {
   final formState = ref.watch(pensionFormNotifierProvider);
   final result = formState.result;
-  
+
   if (result == null) return null;
 
-  final chartData = <PensionByAgeData>[];
-  
-  // 60歳から100歳まで表示
-  const startAge = 60;
-  final startAgeOfPension = formState.desiredPensionStartAge;
-  
-  for (int age = startAge; age <= 100; age++) {
-    double basicPension = 0.0;
-    double occupationalPension = 0.0;
-    
-    // 受給開始年齢以降のみ年金を表示
-    if (age >= startAgeOfPension) {
-      basicPension = result.basicPensionMonthly;
-      occupationalPension = result.occupationalPensionMonthly;
-    }
-
-    chartData.add(
-      PensionByAgeData(
-        age: age,
-        basicPensionMonthly: basicPension,
-        occupationalPensionMonthly: occupationalPension,
-      ),
-    );
-  }
-
-  return chartData;
+  return BuildPensionChartUseCase.execute(
+    result: result,
+    publicPensionStartAge: formState.desiredPensionStartAge,
+  );
 });

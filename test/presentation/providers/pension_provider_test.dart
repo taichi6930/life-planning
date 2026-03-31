@@ -238,6 +238,16 @@ void main() {
       expect(state.desiredPensionStartAge, 70);
     });
 
+    test('setIdecoCurrentBalance で現在の投資残高を更新できる', () {
+      final container = ProviderContainer();
+      final notifier = container.read(pensionFormNotifierProvider.notifier);
+
+      notifier.setIdecoCurrentBalance(2000000);
+      final state = container.read(pensionFormNotifierProvider);
+
+      expect(state.idecoCurrentBalance, 2000000);
+    });
+
     test('厚生年金パラメータ付きで計算すると結果に厚生年金が含まれる', () async {
       final container = ProviderContainer();
       final notifier = container.read(pensionFormNotifierProvider.notifier);
@@ -300,7 +310,7 @@ void main() {
       expect(chartData.last.age, equals(100));
     });
 
-    test('chartProvider: 受給開始年齢前は年金0円、以降は年金あり', () async {
+    test('chartProvider: 受給開始年齢前は公的年金0円、以降は年金あり（iDeCoなし）', () async {
       final container = ProviderContainer();
       final notifier = container.read(pensionFormNotifierProvider.notifier);
 
@@ -311,13 +321,41 @@ void main() {
 
       final chartData = container.read(pensionByAgeChartProvider)!;
 
-      // 60〜69歳は0
+      // 60〜69歳は公的年金0（iDeCoなしのため idecoMonthly も0）
       for (final d in chartData.where((d) => d.age < 70)) {
         expect(d.basicPensionMonthly, equals(0.0), reason: '${d.age}歳: 受給開始前は0');
+        expect(d.idecoMonthly, equals(0.0), reason: '${d.age}歳: iDeCoなしは0');
       }
       // 70歳以降は > 0
       for (final d in chartData.where((d) => d.age >= 70)) {
         expect(d.basicPensionMonthly, greaterThan(0), reason: '${d.age}歳: 受給開始後は年金あり');
+      }
+    });
+
+    test('chartProvider: 2段階iDeCoモデル - Phase 1(60〜64)はiDeCoのみ、Phase 2(65〜)は公的年金+iDeCo', () async {
+      final container = ProviderContainer();
+      final notifier = container.read(pensionFormNotifierProvider.notifier);
+
+      // iDeCo付き設定（大きなFVでPhase 1を乗り越えられる条件）
+      notifier.setCurrentAge(25);
+      notifier.setPaymentMonths(480);
+      notifier.setDesiredPensionStartAge(65);
+      notifier.setIdecoMonthlyContribution(68000);
+      notifier.setIdecoAnnualReturnRate(5.0);
+      notifier.setMonthlyLivingExpenses(200000);
+      await notifier.calculatePension();
+
+      final chartData = container.read(pensionByAgeChartProvider)!;
+
+      // Phase 1 (60〜64歳): 公的年金0、iDeCoは生活費を表示
+      for (final d in chartData.where((d) => d.age < 65)) {
+        expect(d.basicPensionMonthly, equals(0.0), reason: '${d.age}歳: Phase 1 公的年金0');
+        expect(d.idecoMonthly, greaterThan(0), reason: '${d.age}歳: Phase 1 iDeCo > 0');
+      }
+
+      // Phase 2 (65歳以降): 公的年金あり
+      for (final d in chartData.where((d) => d.age >= 65 && d.age < 90)) {
+        expect(d.basicPensionMonthly, greaterThan(0), reason: '${d.age}歳: Phase 2 公的年金あり');
       }
     });
 

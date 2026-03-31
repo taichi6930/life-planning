@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../data/pension_local_storage.dart';
 import '../organisms/pension_form.dart';
 import '../organisms/pension_result_display.dart';
 import '../providers/pension_provider.dart';
-import '../../data/pension_local_storage.dart';
 
 /// 年金計算ページのテンプレート
 /// 
@@ -51,6 +52,11 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
       notifier.setBonus(savedData.bonus!);
     }
     notifier.setDesiredPensionStartAge(savedData.desiredPensionStartAge);
+    notifier.setIdecoMonthlyContribution(savedData.idecoMonthlyContribution);
+    notifier.setIdecoAnnualReturnRate(savedData.idecoAnnualReturnRate);
+    notifier.setIdecoCurrentBalance(savedData.idecoCurrentBalance);
+    notifier.setMonthlyLivingExpenses(savedData.monthlyLivingExpenses);
+    notifier.setTargetAge(savedData.targetAge);
   }
 
   @override
@@ -140,7 +146,7 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
   }
 
   /// フォーム値を Provider に反映して計算を実行
-  void _updateAndCalculate(int age, int months, int occMonths, int salary, int bonus, int startAge) {
+  void _updateAndCalculate(int age, int months, int occMonths, int salary, int bonus, int startAge, int idecoContribution, double idecoReturnRate, int idecoCurrentBalance, int livingExpenses, int targetAge) {
     final notifier = ref.read(pensionFormNotifierProvider.notifier);
     notifier.setCurrentAge(age);
     notifier.setPaymentMonths(months);
@@ -148,6 +154,11 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
     notifier.setMonthlySalary(salary);
     notifier.setBonus(bonus);
     notifier.setDesiredPensionStartAge(startAge);
+    notifier.setIdecoMonthlyContribution(idecoContribution);
+    notifier.setIdecoAnnualReturnRate(idecoReturnRate);
+    notifier.setIdecoCurrentBalance(idecoCurrentBalance);
+    notifier.setMonthlyLivingExpenses(livingExpenses);
+    notifier.setTargetAge(targetAge);
     notifier.calculatePension();
   }
 
@@ -163,6 +174,11 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
       initialMonthlySalary: formState.monthlySalary ?? 0,
       initialBonus: formState.bonus ?? 0,
       initialDesiredPensionStartAge: formState.desiredPensionStartAge,
+      initialIdecoMonthlyContribution: formState.idecoMonthlyContribution,
+      initialIdecoAnnualReturnRate: formState.idecoAnnualReturnRate,
+      initialIdecoCurrentBalance: formState.idecoCurrentBalance,
+      initialMonthlyLivingExpenses: formState.monthlyLivingExpenses,
+      initialTargetAge: formState.targetAge,
       onSubmit: _updateAndCalculate,
       onFieldChanged: _updateAndCalculate,
     );

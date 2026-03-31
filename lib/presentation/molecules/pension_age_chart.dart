@@ -39,24 +39,32 @@ class PensionAgeChart extends StatelessWidget {
       );
     }
 
-    // グラフの最大値を計算（余裕を持たせて120%）
-    final maxValue = data!.map((d) => d.totalMonthly * 12).reduce((a, b) => a > b ? a : b) * 1.2;
+    // グラフの最大値を計算（生活費も考慮、余裕を持たせて120%）
+    final hasLivingExpenses = data!.any((d) => d.monthlyLivingExpenses > 0);
+    final maxPension = data!.map((d) => d.totalMonthly * 12).reduce((a, b) => a > b ? a : b);
+    final maxLiving = hasLivingExpenses
+        ? data!.map((d) => d.monthlyLivingExpenses * 12).reduce((a, b) => a > b ? a : b)
+        : 0.0;
+    final maxValue = (maxPension > maxLiving ? maxPension : maxLiving) * 1.2;
+    final livingExpensesAnnual = hasLivingExpenses ? data!.first.monthlyLivingExpenses * 12 : 0.0;
 
     // BarChart のデータ作成（積み上げ棒グラフ）
     final barGroups = data!.map((d) {
       final ageIndex = data!.indexOf(d);
       final basicAnnual = d.basicPensionMonthly * 12;
+      final occupationalAnnual = d.occupationalPensionMonthly * 12;
       final totalAnnual = d.totalMonthly * 12;
       return BarChartGroupData(
         x: ageIndex,
         barRods: [
           BarChartRodData(
-            toY: totalAnnual,  // 基礎年金 + 厚生年金の合計（年額）
+            toY: totalAnnual,
             color: Colors.blue,
             width: 16,
             rodStackItems: [
-              BarChartRodStackItem(0, basicAnnual, Colors.blue),  // 基礎年金（年額）
-              BarChartRodStackItem(basicAnnual, totalAnnual, Colors.orange),  // 厚生年金（年額）
+              BarChartRodStackItem(0, basicAnnual, Colors.blue),
+              BarChartRodStackItem(basicAnnual, basicAnnual + occupationalAnnual, Colors.orange),
+              BarChartRodStackItem(basicAnnual + occupationalAnnual, totalAnnual, Colors.green),
             ],
           ),
         ],
@@ -92,6 +100,27 @@ class PensionAgeChart extends StatelessWidget {
             child: BarChart(
               BarChartData(
                 maxY: maxValue,
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    if (hasLivingExpenses)
+                      HorizontalLine(
+                        y: livingExpensesAnnual,
+                        color: Colors.red,
+                        strokeWidth: 2,
+                        dashArray: [8, 4],
+                        label: HorizontalLineLabel(
+                          show: true,
+                          alignment: Alignment.topRight,
+                          labelResolver: (line) => '生活費 ¥${(livingExpensesAnnual / 10000).toStringAsFixed(0)}万',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 barTouchData: BarTouchData(
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
@@ -101,10 +130,17 @@ class PensionAgeChart extends StatelessWidget {
                       final age = data![groupIndex].age;
                       final basicPension = data![groupIndex].basicPensionMonthly;
                       final occupationalPension = data![groupIndex].occupationalPensionMonthly;
-                      final total = basicPension + occupationalPension;
+                      final idecoPension = data![groupIndex].idecoMonthly;
+                      final total = data![groupIndex].totalMonthly;
+                      
+                      var tooltipText = '$age歳\n基礎年金: ¥${(basicPension * 12).toStringAsFixed(0)}\n厚生年金: ¥${(occupationalPension * 12).toStringAsFixed(0)}';
+                      if (idecoPension > 0) {
+                        tooltipText += '\niDeCo: ¥${(idecoPension * 12).toStringAsFixed(0)}';
+                      }
+                      tooltipText += '\n合計: ¥${(total * 12).toStringAsFixed(0)}';
                       
                       return BarTooltipItem(
-                        '$age歳\n基礎年金: ¥${(basicPension * 12).toStringAsFixed(0)}\n厚生年金: ¥${(occupationalPension * 12).toStringAsFixed(0)}\n合計: ¥${(total * 12).toStringAsFixed(0)}',
+                        tooltipText,
                         const TextStyle(color: Colors.white, fontSize: 12),
                       );
                     },
@@ -169,6 +205,12 @@ class PensionAgeChart extends StatelessWidget {
               _buildLegendItem(Colors.blue, '基礎年金'),
               const SizedBox(width: 24),
               _buildLegendItem(Colors.orange, '厚生年金'),
+              const SizedBox(width: 24),
+              _buildLegendItem(Colors.green, 'iDeCo'),
+              if (hasLivingExpenses) ...[
+                const SizedBox(width: 24),
+                _buildLegendItem(Colors.red, '生活費'),
+              ],
             ],
           ),
           const SizedBox(height: 8),

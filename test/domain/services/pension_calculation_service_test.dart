@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_planning/domain/services/pension_calculation_service.dart';
+import 'package:life_planning/domain/values/ideco_input.dart';
 import 'package:life_planning/domain/values/national_pension_input.dart';
 import 'package:life_planning/domain/values/occupational_pension_input.dart';
 
@@ -575,6 +576,169 @@ void main() {
       // 最大の繰下げ調整率
       expect(result.adjustmentRate, closeTo(1.84, 0.01));
       expect(result.totalPensionMonthly, greaterThan(120000));
+    });
+  });
+
+  group('iDeCo計算テスト', () {
+    test('calculateIdeco: 月額23,000円・30歳・利回り3%・生活費20万円', () {
+      const input = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        expectedAnnualReturnRate: 3.0,
+      );
+
+      final result = PensionCalculationService.calculateIdeco(
+        input,
+        monthlyLivingExpenses: 200000,
+        targetAge: 90,
+      );
+
+      // 基礎年金・厚生年金は0
+      expect(result.basicPensionMonthly, 0.0);
+      expect(result.occupationalPensionMonthly, 0.0);
+      // iDeCo単体では公的年金0なので不足分=生活費全額
+      expect(result.monthlyShortfall, 200000);
+      expect(result.idecoFutureValue, greaterThan(0));
+      expect(result.idecoExhaustionAge, greaterThan(65));
+      expect(result.monthlyLivingExpenses, 200000);
+      expect(result.targetAge, 90);
+    });
+
+    test('calculateIdeco: 生活費未指定の場合は不足分0', () {
+      const input = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        expectedAnnualReturnRate: 0.0,
+      );
+
+      final result = PensionCalculationService.calculateIdeco(input);
+
+      // 生活費未指定→不足分0→idecoMonthly=0
+      expect(result.idecoMonthly, 0.0);
+      expect(result.monthlyShortfall, 0.0);
+      expect(result.idecoExhaustionAge, 0.0);
+      expect(result.isIdecoSufficient, isTrue);
+    });
+  });
+
+  group('複合年金+iDeCo計算テスト', () {
+    test('calculateCombinedPensionWithIdeco: Phase 1（60〜65歳）をかろうじて生き残りPhase 2直後に枯渇するケース', () {
+      // FV≈17.05M。単純除算モデルではPhase 1コスト(300K×60=18M)を超えるが、
+      // 複利引き出しモデルでは運用益込みでPhase 1(60→65歳)を生き残り（残高≈418K）、
+      // Phase 2開始直後（65歳代）に枯渇する。
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      final occupationalInput = OccupationalPensionInput(
+        enrollmentMonths: 480,
+        averageMonthlyReward: 300000,
+        averageBonusReward: 500000,
+        desiredPensionStartAge: 65,
+      );
+      const idecoInput = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        contributionEndAge: 65, // このテストシナリオは65歳終了で設計（Phase 1直後に枯渇を再現）
+        expectedAnnualReturnRate: 3.0,
+        // pensionStartAge デフォルト=60歳
+      );
+
+      final result = PensionCalculationService.calculateCombinedPensionWithIdeco(
+        nationalInput,
+        occupationalInput,
+        idecoInput,
+        monthlyLivingExpenses: 300000,
+        targetAge: 90,
+      );
+
+      // 基礎年金と厚生年金は正の値
+      expect(result.basicPensionMonthly, greaterThan(0));
+      expect(result.occupationalPensionMonthly, greaterThan(0));
+      // Phase 2の不足分 = 生活費 - 公的年金
+      expect(result.monthlyLivingExpenses, 300000);
+      final publicPension = result.basicPensionMonthly + result.occupationalPensionMonthly;
+      expect(result.monthlyShortfall, closeTo(300000 - publicPension, 0.01));
+      // 複利引き出しモデルではPhase 2(65歳以降)直後に枯渇
+      expect(result.idecoExhaustionAge, greaterThan(65));
+      expect(result.idecoExhaustionAge, lessThan(66));
+      expect(result.isIdecoSufficient, isFalse);
+      expect(result.idecoFutureValue, greaterThan(0));
+      expect(result.targetAge, 90);
+    });
+
+    test('calculateCombinedPensionWithIdeco: Phase 1を生き残り2段階モデルがPhase 2まで継続', () {
+      // 大きなiDeCo(68000円/月, 25歳, 5%)でPhase 1を越え、Phase 2で不足分を補填
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      final occupationalInput = OccupationalPensionInput(
+        enrollmentMonths: 480,
+        averageMonthlyReward: 300000,
+        averageBonusReward: 500000,
+        desiredPensionStartAge: 65,
+      );
+      const idecoInput = IdecoInput(
+        monthlyContribution: 68000,
+        currentAge: 25,
+        expectedAnnualReturnRate: 5.0,
+        // pensionStartAge デフォルト=60歳
+      );
+
+      final result = PensionCalculationService.calculateCombinedPensionWithIdeco(
+        nationalInput,
+        occupationalInput,
+        idecoInput,
+        monthlyLivingExpenses: 300000,
+        targetAge: 90,
+      );
+
+      // 基礎年金と厚生年金は正の値
+      expect(result.basicPensionMonthly, greaterThan(0));
+      expect(result.occupationalPensionMonthly, greaterThan(0));
+      // Phase 2の不足分 = 生活費 - 公的年金
+      final publicPension = result.basicPensionMonthly + result.occupationalPensionMonthly;
+      expect(result.monthlyShortfall, closeTo(300000 - publicPension, 0.01));
+      // iDeCoはPhase 1（60〜65歳）を生き残り、Phase 2で不足分を補填→枯渇年齢は65歳以降
+      expect(result.idecoExhaustionAge, greaterThan(65));
+      expect(result.idecoMonthly, closeTo(300000 - publicPension, 1.0));
+      expect(result.idecoFutureValue, greaterThan(0));
+      expect(result.targetAge, 90);
+    });
+
+    test('calculateNationalPensionWithIdeco: 基礎+iDeCo（厚生なし、2段階モデル）', () {
+      // FV≈103M > Phase 1コスト（200000×60ヶ月=12M）からPhase 2まで継続
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      const idecoInput = IdecoInput(
+        monthlyContribution: 68000,
+        currentAge: 25,
+        expectedAnnualReturnRate: 5.0,
+        // pensionStartAge デフォルト=60歳
+      );
+
+      final result = PensionCalculationService.calculateNationalPensionWithIdeco(
+        nationalInput,
+        idecoInput,
+        monthlyLivingExpenses: 200000,
+        targetAge: 90,
+      );
+
+      // 厚生年金は0
+      expect(result.occupationalPensionMonthly, 0.0);
+      // 基礎年金は正の値
+      expect(result.basicPensionMonthly, greaterThan(0));
+      // Phase 2不足分 = 200000 - 基礎年金
+      expect(result.monthlyShortfall, closeTo(200000 - result.basicPensionMonthly, 0.01));
+      // Phase 1（60〜65歳）を越え、Phase 2で不足分を補填→枯渇年齢は65歳以降
+      expect(result.idecoExhaustionAge, greaterThan(65));
+      expect(result.idecoFutureValue, greaterThan(0));
     });
   });
 }
