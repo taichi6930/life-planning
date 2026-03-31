@@ -115,7 +115,7 @@ class PensionResultDisplay extends ConsumerWidget {
                   '月額生活費': '¥${result.monthlyLivingExpenses.toStringAsFixed(0)}',
                   '公的年金月額': '¥${(result.basicPensionMonthly + result.occupationalPensionMonthly).toStringAsFixed(0)}',
                   '月額不足分': '¥${result.monthlyShortfall.toStringAsFixed(0)}',
-                  'iDeCo枯渇年齢': '${result.idecoExhaustionAge.toStringAsFixed(1)}歳',
+                  'iDeCo枯渇年齢': result.idecoExhaustionAge.isInfinite ? '生涯枯渇なし' : '${result.idecoExhaustionAge.toStringAsFixed(1)}歳',
                   '想定寿命': '${result.targetAge}歳',
                   '判定': result.isIdecoSufficient ? '✅ 足りる' : '❌ 足りない',
                 },
