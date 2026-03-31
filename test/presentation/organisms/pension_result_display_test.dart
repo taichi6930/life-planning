@@ -1,27 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:life_planning/application/dtos/pension_by_age_data.dart';
+import 'package:life_planning/domain/values/pension_result.dart';
 import 'package:life_planning/presentation/organisms/pension_result_display.dart';
-import 'package:life_planning/presentation/providers/pension_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  setUpAll(() async {
-    SharedPreferences.setMockInitialValues({});
-  });
-
-  /// ProviderScope 付きテストウィジェットを生成する
-  Widget buildTestWidget({
-    bool isLoading = false,
-    List<Override> overrides = const [],
+  /// テスト用の PensionResult を生成するヘルパー
+  PensionResult makeResult({
+    double basicPensionMonthly = 65000,
+    double occupationalPensionMonthly = 0,
+    double idecoMonthly = 0,
+    double monthlyLivingExpenses = 0,
+    double idecoFutureValue = 0,
   }) {
-    return ProviderScope(
-      overrides: overrides,
-      child: MaterialApp(
-        home: Scaffold(
-          body: PensionResultDisplay(isLoading: isLoading),
-        ),
-      ),
+    return PensionResult(
+      basicPensionMonthly: basicPensionMonthly,
+      basicPensionAnnual: basicPensionMonthly * 12,
+      occupationalPensionMonthly: occupationalPensionMonthly,
+      occupationalPensionAnnual: occupationalPensionMonthly * 12,
+      idecoMonthly: idecoMonthly,
+      idecoAnnual: idecoMonthly * 12,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      idecoFutureValue: idecoFutureValue,
+      totalPensionMonthly: basicPensionMonthly + occupationalPensionMonthly + idecoMonthly,
+      totalPensionAnnual: (basicPensionMonthly + occupationalPensionMonthly + idecoMonthly) * 12,
+      adjustmentRate: 1.0,
+      pensionStartAge: 65,
+    );
+  }
+
+  /// テスト用ウィジェットを生成するヘルパー
+  Widget buildTestWidget(PensionResultDisplay widget) {
+    return MaterialApp(
+      home: Scaffold(body: widget),
     );
   }
 
@@ -36,47 +47,30 @@ void main() {
     /// | 4 | false     | あり   | true        | 基礎+厚生+合計           |
 
     testWidgets('ケース1: ローディング中はインジケータが表示される', (WidgetTester tester) async {
-      await tester.pumpWidget(buildTestWidget(isLoading: true));
+      await tester.pumpWidget(buildTestWidget(
+        const PensionResultDisplay(isLoading: true),
+      ));
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('ケース2: 結果なしでプロンプトテキストが表示される', (WidgetTester tester) async {
-      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpWidget(buildTestWidget(
+        const PensionResultDisplay(),
+      ));
       await tester.pumpAndSettle();
 
       expect(find.text('フォームを入力して「計算する」ボタンを押してください'), findsOneWidget);
     });
 
     testWidgets('ケース3: 基礎年金のみの結果が表示される', (WidgetTester tester) async {
-      // 計算を実行して結果を設定
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) {
-                  // テスト用にNotifierに値を設定
-                  return Builder(
-                    builder: (context) {
-                      return const PensionResultDisplay(isLoading: false);
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
+      await tester.pumpWidget(buildTestWidget(
+        PensionResultDisplay(
+          result: makeResult(basicPensionMonthly: 65000),
+          currentAge: 35,
+          paymentMonths: 360,
         ),
-      );
-
-      // 先にNotifierに値を設定
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(PensionResultDisplay)),
-      );
-      final notifier = container.read(pensionFormNotifierProvider.notifier);
-      notifier.setCurrentAge(35);
-      notifier.setPaymentMonths(360);
-      await notifier.calculatePension();
+      ));
       await tester.pumpAndSettle();
 
       // 基礎年金計算結果カードが表示される
@@ -88,26 +82,17 @@ void main() {
     });
 
     testWidgets('ケース4: 厚生年金含む結果が表示される（基礎+厚生+合計）', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: PensionResultDisplay(isLoading: false),
-            ),
+      await tester.pumpWidget(buildTestWidget(
+        PensionResultDisplay(
+          result: makeResult(
+            basicPensionMonthly: 65000,
+            occupationalPensionMonthly: 80000,
           ),
+          currentAge: 35,
+          paymentMonths: 360,
+          occupationalPaymentMonths: 240,
         ),
-      );
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(PensionResultDisplay)),
-      );
-      final notifier = container.read(pensionFormNotifierProvider.notifier);
-      notifier.setCurrentAge(35);
-      notifier.setPaymentMonths(360);
-      notifier.setOccupationalPaymentMonths(240);
-      notifier.setMonthlySalary(300000);
-      notifier.setBonus(500000);
-      await notifier.calculatePension();
+      ));
       await tester.pumpAndSettle();
 
       // 3つの結果カードが表示される
@@ -120,23 +105,13 @@ void main() {
     });
 
     testWidgets('計算条件に現在の年齢と納付月数が表示される', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: PensionResultDisplay(isLoading: false),
-            ),
-          ),
+      await tester.pumpWidget(buildTestWidget(
+        PensionResultDisplay(
+          result: makeResult(basicPensionMonthly: 65000),
+          currentAge: 40,
+          paymentMonths: 300,
         ),
-      );
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(PensionResultDisplay)),
-      );
-      final notifier = container.read(pensionFormNotifierProvider.notifier);
-      notifier.setCurrentAge(40);
-      notifier.setPaymentMonths(300);
-      await notifier.calculatePension();
+      ));
       await tester.pumpAndSettle();
 
       expect(find.text('40歳'), findsOneWidget);
@@ -144,23 +119,12 @@ void main() {
     });
 
     testWidgets('納付率が正しく表示される', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: PensionResultDisplay(isLoading: false),
-            ),
-          ),
+      await tester.pumpWidget(buildTestWidget(
+        PensionResultDisplay(
+          result: makeResult(basicPensionMonthly: 65000),
+          contributionRate: 1.0, // 480/480 = 100.0%
         ),
-      );
-
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(PensionResultDisplay)),
-      );
-      final notifier = container.read(pensionFormNotifierProvider.notifier);
-      notifier.setCurrentAge(35);
-      notifier.setPaymentMonths(480);
-      await notifier.calculatePension();
+      ));
       await tester.pumpAndSettle();
 
       // 480/480 = 100.0%
