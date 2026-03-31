@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../templates/pension_form_template.dart';
 
 /// 年金計算ページ
-/// 
+///
 /// PensionFormTemplate をラップした実際のページコンポーネント
 class PensionCalculationPage extends StatelessWidget {
   const PensionCalculationPage({super.key});

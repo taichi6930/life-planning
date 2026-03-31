@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 基本的なボタン Atom
-/// 
+///
 /// 様々なバリエーション（primary, secondary, disabled）に対応
 class Button extends StatelessWidget {
   final String label;

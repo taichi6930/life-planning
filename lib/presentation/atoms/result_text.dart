@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 計算結果を表示するテキスト Atom
-/// 
+///
 /// 数値結果を適切なフォーマットで表示
 class ResultText extends StatelessWidget {
   final String label;

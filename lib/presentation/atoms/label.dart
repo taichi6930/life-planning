@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// テキストラベル Atom
-/// 
+///
 /// 異なるサイズと色をサポート
 class Label extends StatelessWidget {
   final String text;

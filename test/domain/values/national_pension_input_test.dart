@@ -110,7 +110,7 @@ import 'package:life_planning/domain/values/national_pension_input.dart';
 ///              + (halfExempt × 3/4)
 ///              + (quarterExempt × 7/8)
 ///              + 0（studentDeferment は非計上）
-/// 
+///
 /// 有効納付月数 <= 480月（上限）
 /// fullContribution, 各免除、studentDeferment >= 0（非負）
 /// 60 <= desiredPensionStartAge <= 75（受給開始年齢範囲）
@@ -125,7 +125,7 @@ import 'package:life_planning/domain/values/national_pension_input.dart';
 ///           + (threeQuarterExempt × 5/8)
 ///           + (halfExempt × 3/4)
 ///           + (quarterExempt × 7/8)
-/// 
+///
 /// 注意:
 /// - studentDeferment: 0%（有効月数に含まれない）
 /// - 制約: effective <= 480月
@@ -141,7 +141,7 @@ import 'package:life_planning/domain/values/national_pension_input.dart';
 /// desiredAge <= 65:
 ///   rate = 1.0 - 0.004 × (65 - desiredAge) × 12
 ///   範囲: 0.76～1.0（繰上げ時は減額）
-/// 
+///
 /// desiredAge > 65:
 ///   rate = 1.0 + 0.007 × (desiredAge - 65) × 12
 ///   範囲: 1.0～1.84（繰下げ時は増額）

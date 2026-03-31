@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/dtos/pension_by_age_data.dart';
 import '../../data/pension_local_storage.dart';
+import '../../domain/values/ideco_input.dart';
+import '../../domain/values/occupational_pension_input.dart';
 import '../organisms/pension_form.dart';
 import '../organisms/pension_result_display.dart';
 import '../providers/pension_provider.dart';
 
 /// 年金計算ページのテンプレート
-/// 
+///
 /// フォーム入力と結果表示を組み合わせたレイアウト
 class PensionFormTemplate extends ConsumerStatefulWidget {
   final String title;
@@ -62,6 +65,8 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
   @override
   Widget build(BuildContext context) {
     final formState = ref.watch(pensionFormNotifierProvider);
+    final chartData = ref.watch(pensionByAgeChartProvider);
+    final contributionRate = ref.watch(contributionRateProvider);
 
     // 画面幅に応じてレイアウトを切り替え（レスポンシブ対応）
     return LayoutBuilder(
@@ -74,8 +79,8 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
             elevation: 0,
           ),
           body: isWideScreen
-              ? _buildWideLayout(ref, formState)
-              : _buildNarrowLayout(ref, formState),
+              ? _buildWideLayout(ref, formState, chartData, contributionRate)
+              : _buildNarrowLayout(ref, formState, chartData, contributionRate),
         );
       },
     );
@@ -85,6 +90,8 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
   Widget _buildWideLayout(
     WidgetRef ref,
     PensionFormState formState,
+    List<PensionByAgeData>? chartData,
+    double? contributionRate,
   ) {
     return Row(
       children: [
@@ -97,7 +104,7 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
         ),
         // 右側：結果表示
         Expanded(
-          child: PensionResultDisplay(isLoading: formState.isLoading),
+          child: _buildResult(formState, chartData, contributionRate),
         ),
       ],
     );
@@ -107,6 +114,8 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
   Widget _buildNarrowLayout(
     WidgetRef ref,
     PensionFormState formState,
+    List<PensionByAgeData>? chartData,
+    double? contributionRate,
   ) {
     return DefaultTabController(
       length: 2,
@@ -127,7 +136,7 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
                   // 結果表示（フォーム下）
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: PensionResultDisplay(isLoading: formState.isLoading),
+                    child: _buildResult(formState, chartData, contributionRate),
                   ),
                 ],
               ),
@@ -136,7 +145,7 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
             SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: PensionResultDisplay(isLoading: formState.isLoading),
+                child: _buildResult(formState, chartData, contributionRate),
               ),
             ),
           ],
@@ -162,6 +171,26 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
     notifier.calculatePension();
   }
 
+  /// 結果表示 Widgetを構築する
+  ///
+  /// provider 由来のデータを Temple が受け取り、PensionResultDisplay に渡す。
+  Widget _buildResult(
+    PensionFormState formState,
+    List<PensionByAgeData>? chartData,
+    double? contributionRate,
+  ) {
+    return PensionResultDisplay(
+      isLoading: formState.isLoading,
+      result: formState.result,
+      chartData: chartData,
+      contributionRate: contributionRate,
+      currentAge: formState.currentAge,
+      paymentMonths: formState.paymentMonths,
+      occupationalPaymentMonths: formState.occupationalPaymentMonths,
+      desiredPensionStartAge: formState.desiredPensionStartAge,
+    );
+  }
+
   /// 入力フォーム Widget
   ///
   /// 共通化。素直にプロバイダに値を渡す。
@@ -181,6 +210,8 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
       initialTargetAge: formState.targetAge,
       onSubmit: _updateAndCalculate,
       onFieldChanged: _updateAndCalculate,
+      maxOccupationalPaymentMonths: OccupationalPensionInput.maxEnrollmentMonths,
+      maxIdecoMonthlyContribution: IdecoInput.maxMonthlyContributionSelfEmployed,
     );
   }
 }

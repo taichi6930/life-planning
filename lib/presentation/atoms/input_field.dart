@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// 基本的なテキスト入力フィールド
-/// 
+///
 /// 数値入力や通常の入力フィールドの基盤となる Atom
 class InputField extends StatelessWidget {
   final String label;

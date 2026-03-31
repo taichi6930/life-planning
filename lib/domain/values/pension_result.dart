@@ -113,6 +113,16 @@ class PensionResult {
     required this.pensionStartAge,
   });
 
+  /// 公的年金月額（円）
+  ///
+  /// 基礎年金 + 厚生年金（iDeCoを含まない）
+  double get publicPensionMonthly => basicPensionMonthly + occupationalPensionMonthly;
+
+  /// 公的年金年額（円）
+  ///
+  /// publicPensionMonthly × 12
+  double get publicPensionAnnual => publicPensionMonthly * 12;
+
   /// 見やすくフォーマットされた文字列表現
   ///
   /// 日本円の通貨形式と、繰上げ/繰下げの状態を含む。
