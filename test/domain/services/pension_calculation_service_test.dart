@@ -623,9 +623,10 @@ void main() {
 
   group('複合年金+iDeCo計算テスト', () {
     test('calculateCombinedPensionWithIdeco: Phase 1（60〜65歳）をかろうじて生き残りPhase 2直後に枯渇するケース', () {
-      // FV≈17.05M。単純除算モデルではPhase 1コスト(300K×60=18M)を超えるが、
-      // 複利引き出しモデルでは運用益込みでPhase 1(60→65歳)を生き残り（残高≈418K）、
+      // 25歳〜60歳（pensionStartAge=60で拠出終了）= 420ヶ月、FV≈17.06M。
+      // 複利引き出しモデルでは運用益込みでPhase 1(60→65歳, 月30万引き出し)を生き残り（残高≈420K）、
       // Phase 2開始直後（65歳代）に枯渇する。
+      // ※ iDeCoは受給開始と同時に拠出終了。60歳以降は引き出しながら残高を運用継続。
       final nationalInput = NationalPensionInput(
         fullContribution: 480,
         desiredPensionStartAge: 65,
@@ -639,10 +640,9 @@ void main() {
       );
       const idecoInput = IdecoInput(
         monthlyContribution: 23000,
-        currentAge: 30,
-        contributionEndAge: 65, // このテストシナリオは65歳終了で設計（Phase 1直後に枯渇を再現）
+        currentAge: 25, // 25〜60歳 = 420ヶ月でFV≈17M（pensionStartAge=60で拠出終了）
         expectedAnnualReturnRate: 3.0,
-        // pensionStartAge デフォルト=60歳
+        // pensionStartAge デフォルト=60歳 → 60歳で拠出終了・受給開始
       );
 
       final result = PensionCalculationService.calculateCombinedPensionWithIdeco(

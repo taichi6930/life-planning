@@ -131,10 +131,21 @@ class IdecoInput {
     this.currentBalance = 0,
   });
 
-  /// 拠出月数（currentAge から contributionEndAge まで）
+  /// 拠出月数（currentAge から受給開始年齢まで）
   ///
-  /// 例: 現在30歳, 拠出終了年齢65歳 → 420ヶ月
-  int get contributionMonths => (contributionEndAge - currentAge) * 12;
+  /// iDeCoは受給開始と同時に拠出が終わるため、
+  /// 実効的な拠出終了年齢 = min(pensionStartAge, contributionEndAge) を使用する。
+  ///
+  /// 例: 現在30歳, 受給開始60歳 → 360ヶ月
+  /// 例: 現在30歳, 受給開始70歳（繰り下げ）, 上限70歳 → 480ヶ月
+  /// 例: 既に受給開始年齢を超えている場合 → 0ヶ月（残高のみ）
+  int get contributionMonths {
+    final effectiveEndAge = pensionStartAge < contributionEndAge
+        ? pensionStartAge
+        : contributionEndAge;
+    if (effectiveEndAge <= currentAge) return 0;
+    return (effectiveEndAge - currentAge) * 12;
+  }
 
   /// 月利（年利回りを12で割った値）
   ///

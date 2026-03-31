@@ -67,20 +67,21 @@ void main() {
   });
 
   group('IdecoInput - 拠出月数計算', () {
-    test('30歳〜70歳で480ヶ月（2025年改正後デフォルト）', () {
+    test('30歳・受給開始60歳（デフォルト）で360ヶ月', () {
+      // iDeCoは受給開始（60歳）と同時に拠出終了するため30〜60歳 = 360ヶ月
       const input = IdecoInput(
         monthlyContribution: 23000,
         currentAge: 30,
       );
-      expect(input.contributionMonths, 480);
+      expect(input.contributionMonths, 360);
     });
 
-    test('20歳〜70歳で600ヶ月（2025年改正後デフォルト）', () {
+    test('20歳・受給開始60歳（デフォルト）で480ヶ月', () {
       const input = IdecoInput(
         monthlyContribution: 23000,
         currentAge: 20,
       );
-      expect(input.contributionMonths, 600);
+      expect(input.contributionMonths, 480);
     });
 
     test('40歳〜60歳（終了年齢カスタム）で240ヶ月', () {
@@ -115,24 +116,24 @@ void main() {
 
   group('IdecoInput - 将来価値（FV）計算', () {
     test('利回り0%の場合は単純積算（既存残高あり）', () {
-      // 月額23,000円 × 480ヶ月 + 残高500,000円 = 11,540,000円
+      // 月額23,000円 × 360ヶ月（30〜60歳）+ 残高500,000円 = 8,780,000円
       const input = IdecoInput(
         monthlyContribution: 23000,
         currentAge: 30,
         expectedAnnualReturnRate: 0.0,
         currentBalance: 500000,
       );
-      expect(input.futureValue, closeTo(11540000, 1));
+      expect(input.futureValue, closeTo(8780000, 1));
     });
 
     test('利回り0%の場合は単純積算', () {
-      // 月額23,000円 × 480ヶ月 = 11,040,000円
+      // 月額23,000円 × 360ヶ月（30〜60歳）= 8,280,000円
       const input = IdecoInput(
         monthlyContribution: 23000,
         currentAge: 30,
         expectedAnnualReturnRate: 0.0,
       );
-      expect(input.futureValue, closeTo(11040000, 1));
+      expect(input.futureValue, closeTo(8280000, 1));
     });
 
     test('利回り3%・月額23,000円・30歳〜65歳のFV（既存残高あり）', () {
@@ -154,24 +155,26 @@ void main() {
       expect(withBalance.futureValue - noBalance.futureValue, greaterThan(1000000));
     });
 
-    test('利回り3%・月額23,000円・30歳〜70歳のFV', () {
-      // FV = 23000 × ((1+0.0025)^480 - 1) / 0.0025
+    test('利回り3%・月額23,000円・30歳〜60歳のFV', () {
+      // FV = 23000 × ((1+0.0025)^360 - 1) / 0.0025 ≈ 13,406,240円
       const input = IdecoInput(
         monthlyContribution: 23000,
         currentAge: 30,
         expectedAnnualReturnRate: 3.0,
       );
-      // 複利計算の結果は元本（1,104万円）より多い
-      expect(input.futureValue, greaterThan(11040000)); // 利回りありなので元本より多い
-      expect(input.futureValue, greaterThan(15000000));
+      // 複利計算の結果は元本（8,280,000円）より多い
+      expect(input.futureValue, greaterThan(8280000)); // 利回りありなので元本より多い
+      expect(input.futureValue, greaterThan(13000000));
     });
 
-    test('短期間・少額拠出のFV', () {
-      // 月額5,000円 × 120ヶ月（10年）、利回り0%
+    test('短期間・少額拠出のFV（受給開始70歳に繰り下げ）', () {
+      // 60歳〜70歳まで拠出（10年 = 120ヶ月）、利回り0%、受給開始70歳に繰り下げ
+      // FV = 5,000 × 120 = 600,000円
       const input = IdecoInput(
         monthlyContribution: 5000,
         currentAge: 60,
         expectedAnnualReturnRate: 0.0,
+        pensionStartAge: 70, // 70歳まで繰り下げ
       );
       expect(input.futureValue, closeTo(600000, 1));
     });
@@ -356,9 +359,9 @@ void main() {
         expectedAnnualReturnRate: 3.0,
       );
       expect(input.isValid(), isTrue);
-      expect(input.contributionMonths, 480); // 30〜70歳（2025年改正後）
-      // 複利運用であれば元本（1,104万円）より大きい
-      expect(input.futureValue, greaterThan(11040000));
+      expect(input.contributionMonths, 360); // 30〜60歳（受給開始60歳デフォルト）
+      // 複利運用であれば元本（8,280,000円）より大きい
+      expect(input.futureValue, greaterThan(8280000));
     });
 
     test('シナリオB: 自営業者25歳、月額68,000円、利回り5%', () {
@@ -368,22 +371,22 @@ void main() {
         expectedAnnualReturnRate: 5.0,
       );
       expect(input.isValid(), isTrue);
-      expect(input.contributionMonths, 540); // 25〜70歳（2025年改正後）
-      // 高額拠出+高利回りで大きなFV
-      expect(input.futureValue, greaterThan(36720000)); // 元本=68000*540
+      expect(input.contributionMonths, 420); // 25〜60歳（受給開始60歳デフォルト）
+      // 高額拠出+高利回りで大きなFV（元本 = 68000 × 420 = 28,560,000円）
+      expect(input.futureValue, greaterThan(28560000));
     });
 
     test('シナリオC: 元本保証型（利回り0%）50歳開始、月額23,000円', () {
-      // 50歳〜70歳 = 20年 = 240ヶ月（2025年改正後）
-      // FV = 23000 × 240 = 5,520,000円
+      // 50歳〜60歳 = 10年 = 120ヶ月（受給開始60歳デフォルト）
+      // FV = 23000 × 120 = 2,760,000円
       const input = IdecoInput(
         monthlyContribution: 23000,
         currentAge: 50,
         expectedAnnualReturnRate: 0.0,
       );
       expect(input.isValid(), isTrue);
-      expect(input.contributionMonths, 240);
-      expect(input.futureValue, closeTo(5520000, 1));
+      expect(input.contributionMonths, 120);
+      expect(input.futureValue, closeTo(2760000, 1));
     });
   });
 }
