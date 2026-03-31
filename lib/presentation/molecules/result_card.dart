@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../atoms/result_text.dart';
 
 /// 計算結果カード Molecule
-/// 
+///
 /// Atoms: ResultText を複数使用して、年金計算結果を表示
 class ResultCard extends StatelessWidget {
   final String title;

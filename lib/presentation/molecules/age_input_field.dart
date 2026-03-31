@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../atoms/input_field.dart';
 
 /// 年齢入力フィールド Molecule
-/// 
+///
 /// Atoms: InputField を使用した年齢専用入力フィールド
 /// バリデーション: 0～120の整数のみ
 class AgeInputField extends StatefulWidget {

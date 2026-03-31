@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/pension_local_storage.dart';
+import '../../domain/values/ideco_input.dart';
+import '../../domain/values/occupational_pension_input.dart';
 import '../organisms/pension_form.dart';
 import '../organisms/pension_result_display.dart';
 import '../providers/pension_provider.dart';
 
 /// 年金計算ページのテンプレート
-/// 
+///
 /// フォーム入力と結果表示を組み合わせたレイアウト
 class PensionFormTemplate extends ConsumerStatefulWidget {
   final String title;
@@ -181,6 +183,8 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
       initialTargetAge: formState.targetAge,
       onSubmit: _updateAndCalculate,
       onFieldChanged: _updateAndCalculate,
+      maxOccupationalPaymentMonths: OccupationalPensionInput.maxEnrollmentMonths,
+      maxIdecoMonthlyContribution: IdecoInput.maxMonthlyContributionSelfEmployed,
     );
   }
 }

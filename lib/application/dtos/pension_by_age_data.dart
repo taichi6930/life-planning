@@ -30,4 +30,19 @@ class PensionByAgeData {
 
   /// 合計年金月額（基礎年金 + 厚生年金 + iDeCo）
   double get totalMonthly => basicPensionMonthly + occupationalPensionMonthly + idecoMonthly;
+
+  /// 基礎年金年額（円）
+  double get basicPensionAnnual => basicPensionMonthly * 12;
+
+  /// 厚生年金年額（円）
+  double get occupationalPensionAnnual => occupationalPensionMonthly * 12;
+
+  /// iDeCo年額（円）
+  double get idecoAnnual => idecoMonthly * 12;
+
+  /// 合計年金年額（円）
+  double get totalAnnual => totalMonthly * 12;
+
+  /// 年間生活費（円）
+  double get monthlyLivingExpensesAnnual => monthlyLivingExpenses * 12;
 }

@@ -5,10 +5,10 @@ import '../molecules/age_input_field.dart';
 import '../molecules/payment_months_input_field.dart';
 
 /// 年金計算フォーム Organism
-/// 
+///
 /// Molecules: AgeInputField, PaymentMonthsInputField を組み合わせた
 /// 年金計算用のフォーム UI
-/// 
+///
 /// 責務: UI のみ。計算ロジックは親（Template）に委譲
 class PensionForm extends StatefulWidget {
   final Function(int currentAge, int paymentMonths, int occupationalPaymentMonths, int monthlySalary, int bonus, int desiredPensionStartAge, int idecoMonthlyContribution, double idecoAnnualReturnRate, int idecoCurrentBalance, int monthlyLivingExpenses, int targetAge)? onSubmit;
@@ -27,6 +27,12 @@ class PensionForm extends StatefulWidget {
   final int initialMonthlyLivingExpenses;
   final int initialTargetAge;
 
+  /// 厚生年金加入月数の上限（ドメイン定数を外から渡す）
+  final int maxOccupationalPaymentMonths;
+
+  /// iDeCo月額拠出上限（自営業、ドメイン定数を外から渡す）
+  final int maxIdecoMonthlyContribution;
+
   const PensionForm({
     super.key,
     this.onSubmit,
@@ -43,6 +49,8 @@ class PensionForm extends StatefulWidget {
     this.initialIdecoCurrentBalance = 0,
     this.initialMonthlyLivingExpenses = 0,
     this.initialTargetAge = 90,
+    this.maxOccupationalPaymentMonths = 600,
+    this.maxIdecoMonthlyContribution = 75000,
   });
 
   @override
@@ -328,7 +336,7 @@ class _PensionFormState extends State<PensionForm> {
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 final months = int.tryParse(value);
-                if (months != null && months >= 0 && months <= 600) {
+                if (months != null && months >= 0 && months <= widget.maxOccupationalPaymentMonths) {
                   setState(() {
                     _occupationalPaymentMonths = months;
                     _notifyFieldChange();
@@ -410,7 +418,7 @@ class _PensionFormState extends State<PensionForm> {
               keyboardType: TextInputType.number,
               onChanged: (value) {
                 final amount = int.tryParse(value);
-                if (amount != null && amount >= 0 && amount <= 75000) {
+                if (amount != null && amount >= 0 && amount <= widget.maxIdecoMonthlyContribution) {
                   setState(() {
                     _idecoMonthlyContribution = amount;
                     _notifyFieldChange();

@@ -4,6 +4,7 @@ import '../../application/dtos/pension_by_age_data.dart';
 import '../../application/usecases/build_pension_chart_use_case.dart';
 import '../../data/pension_local_storage.dart';
 import '../../domain/usecases/calculate_pension_use_case.dart';
+import '../../domain/values/national_pension_input.dart';
 import '../../domain/values/pension_result.dart';
 
 /// copyWith で「値を指定しなかった」と「null を指定した」を区別するための定数
@@ -14,7 +15,7 @@ class _Sentinel {
 const _sentinel = _Sentinel();
 
 /// 年金計算フォームの状態管理
-/// 
+///
 /// 入力値（年齢、納付月数、厚生年金月数、給与、賞与、受給開始年齢）と計算結果を管理する StateNotifier
 class PensionFormState {
   final int? currentAge;
@@ -229,7 +230,7 @@ final nationalPensionMonthlyProvider = Provider<double?>((ref) {
 final contributionRateProvider = Provider<double?>((ref) {
   final state = ref.watch(pensionFormNotifierProvider);
   if (state.paymentMonths == null) return null;
-  return state.paymentMonths! / 480.0;
+  return state.paymentMonths! / NationalPensionInput.fullContributionMonths;
 });
 
 /// 年齢別年金額グラフデータプロバイダ

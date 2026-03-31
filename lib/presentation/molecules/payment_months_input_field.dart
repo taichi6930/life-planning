@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../atoms/input_field.dart';
 
 /// 納付月数入力フィールド Molecule
-/// 
+///
 /// Atoms: InputField を使用した納付月数専用入力フィールド
 /// バリデーション: 0～480の整数のみ（40年分を想定）
 class PaymentMonthsInputField extends StatefulWidget {
