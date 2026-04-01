@@ -85,3 +85,8 @@ check_coverage.py
 tmp/
 temp/
 *.tmp
+
+# CLI Pension Simulator outputs
+pension_simulation_input.txt
+pension_simulation_result.txt
+pension_basic_monthly.csv

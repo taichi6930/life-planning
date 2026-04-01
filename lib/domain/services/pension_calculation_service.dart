@@ -230,23 +230,18 @@ class PensionCalculationService {
     );
   }
 
-  /// 複合年金計算（基礎年金 + 厚生年金 + iDeCo）2段階モデル
+  /// 複合年金計算（基礎年金 + 厚生年金 + iDeCo）シンプルモデル
   ///
-  /// 60歳〜公的年金受給開始年齢まではiDeCoのみで生活費を賄い、
-  /// 公的年金受給開始後は「生活費 - 公的年金」の不足分をiDeCoで補填する。
+  /// 年齢に関わらず、常に「生活費 - 公的年金」の不足分をiDeCoで補填する。
+  /// 60歳受給開始時は公的年金が0なので、結果的に生活費全額をiDeCoで補填。
   /// 受給中も運用を継続するため年金現価公式を使用。
   ///
-  /// 【Phase 1】iDeCo受給開始（60歳）〜 公的年金受給開始年齢
-  ///   - 月額iDeCo引出 = 月額生活費（全額）、残高は運用継続
-  ///   - Phase 1終了時残高 = _balanceAfterDrawdown(FV, 月額生活費, r, n1)
+  /// iDeCo月額 = max(0, 月額生活費 - 公的年金月額)
   ///
-  /// 【Phase 2】公的年金受給開始〜 想定寿命
-  ///   - 月額不足分 = 月額生活費 - (基礎年金 + 厚生年金)
-  ///   - iDeCoで不足分を補填（運用継続）
-  ///
-  /// iDeCo枯渇年齢:
-  ///   - Phase 1中に枯渇: idecoStartAge + _monthsUntilExhaustion(FV, 生活費, r) / 12
-  ///   - Phase 2で枯渇:  publicStartAge + _monthsUntilExhaustion(Phase1後残高, 不足分, r) / 12
+  /// iDeCo枯渇年齢は、60歳から毎月idecoMonthlyを引き出した総合的な枯渇年齢：
+  ///   1. 60〜受給開始前：月額生活費全額を引き出す
+  ///   2. 受給開始以降：不足分をidecoMonthlyとして引き出す
+  ///   → 全体としての枯渇年齢を計算
   static PensionResult calculateCombinedPensionWithIdeco(
     NationalPensionInput nationalPensionInput,
     OccupationalPensionInput occupationalPensionInput,
@@ -259,25 +254,25 @@ class PensionCalculationService {
     final r = idecoInput.monthlyReturnRate;
     final publicPensionMonthly = base.basicPensionMonthly + base.occupationalPensionMonthly;
 
-    // 2段階モデル: iDeCo受給開始（60歳）〜公的年金受給開始の期間を計算
+    // 受給開始年齢
     final idecoStartAge = idecoInput.pensionStartAge;
     final publicStartAge = nationalPensionInput.desiredPensionStartAge;
-    final prePensionMonths = publicStartAge > idecoStartAge
-        ? (publicStartAge - idecoStartAge) * 12
-        : 0;
 
-    // Phase 2の不足分（公的年金受給開始以降）
-    final phase2ShortfallRaw = monthlyLivingExpenses > 0
+    // 受給開始時の不足分（基本となるiDeCo引き出し月額）
+    final shortfallRaw = monthlyLivingExpenses > 0
         ? monthlyLivingExpenses - publicPensionMonthly
         : 0.0;
-    final phase2Shortfall = phase2ShortfallRaw > 0 ? phase2ShortfallRaw : 0.0;
+    final monthlyShortfall = shortfallRaw > 0 ? shortfallRaw : 0.0;
+    final idecoMonthly = monthlyShortfall; // グラフ表示用
 
     double exhaustionAge = 0.0;
     bool isSufficient = true;
-    double idecoMonthly = 0.0;
 
     if (monthlyLivingExpenses > 0 && fv > 0) {
-      // Phase 1: iDeCo受給開始〜公的年金受給開始（運用しながら生活費を全額引き出す）
+      // Phase 1（60〜受給開始前）：月額生活費全額を引き出す
+      final prePensionMonths = publicStartAge > idecoStartAge
+          ? (publicStartAge - idecoStartAge) * 12
+          : 0;
       final remainingAfterPhase1 =
           _balanceAfterDrawdown(fv, monthlyLivingExpenses, r, prePensionMonths);
 
@@ -286,11 +281,9 @@ class PensionCalculationService {
         final months = _monthsUntilExhaustion(fv, monthlyLivingExpenses, r);
         exhaustionAge = idecoStartAge + months / 12.0;
         isSufficient = exhaustionAge >= targetAge;
-        idecoMonthly = 0.0; // Phase 2ではiDeCo枯渇済み
-      } else if (phase2Shortfall > 0) {
-        // Phase 2: 公的年金受給開始以降、運用しながら不足分を補填
-        idecoMonthly = phase2Shortfall;
-        final months = _monthsUntilExhaustion(remainingAfterPhase1, phase2Shortfall, r);
+      } else if (monthlyShortfall > 0) {
+        // Phase 2（受給開始以降）：不足分を引き出す
+        final months = _monthsUntilExhaustion(remainingAfterPhase1, idecoMonthly, r);
         exhaustionAge = months == double.infinity
             ? double.infinity
             : publicStartAge.toDouble() + months / 12.0;
@@ -298,7 +291,6 @@ class PensionCalculationService {
       } else {
         // 公的年金だけで生活費を賄える（iDeCoは余剰）
         isSufficient = true;
-        idecoMonthly = 0.0;
       }
     }
 
@@ -310,7 +302,7 @@ class PensionCalculationService {
       idecoMonthly: idecoMonthly,
       idecoAnnual: idecoMonthly * 12,
       monthlyLivingExpenses: monthlyLivingExpenses,
-      monthlyShortfall: phase2Shortfall,
+      monthlyShortfall: monthlyShortfall,
       idecoFutureValue: fv,
       idecoExhaustionAge: exhaustionAge,
       targetAge: targetAge,

@@ -64,7 +64,8 @@ class PensionAgeChart extends StatelessWidget {
           BarChartRodData(
             toY: totalAnnual,
             color: Colors.blue,
-            width: 16,
+            width: 12, // さらに狭くしてギュッと詰める
+            borderRadius: const BorderRadius.all(Radius.circular(4)), // 角を丸くして滑らかに
             rodStackItems: [
               BarChartRodStackItem(0, basicAnnual, Colors.blue),
               BarChartRodStackItem(basicAnnual, base2, Colors.orange),
@@ -106,6 +107,8 @@ class PensionAgeChart extends StatelessWidget {
             child: BarChart(
               BarChartData(
                 maxY: maxValue,
+                groupsSpace: 2, // バー間のスペースを狭くしてギュッと詰める
+                alignment: BarChartAlignment.spaceEvenly,
                 extraLinesData: ExtraLinesData(
                   horizontalLines: [
                     if (hasLivingExpenses)

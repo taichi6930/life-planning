@@ -33,8 +33,10 @@ class PensionResultTable extends StatelessWidget {
     final hasIdeco = data.any((d) => d.idecoMonthly > 0);
     final hasInvestmentTrust = data.any((d) => d.investmentTrustMonthly > 0);
     final hasLivingExpenses = data.any((d) => d.monthlyLivingExpenses > 0);
-    final hasIdecoBalance = data.any((d) => d.idecoBalance > 0);
-    final hasInvestmentTrustBalance = data.any((d) => d.investmentTrustBalance > 0);
+    // iDeCo月額が表示される場合、残高列も表示する（取り崩し過程を見えるように）
+    final hasIdecoBalance = hasIdeco;
+    // 投資信託月額が表示される場合、残高列も表示する
+    final hasInvestmentTrustBalance = hasInvestmentTrust;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -123,13 +125,13 @@ class PensionResultTable extends StatelessWidget {
               if (hasOccupational)
                 DataCell(Text(_formatCurrency(occupational))),
               if (hasIdeco) ...[
-                DataCell(Text(_formatCurrency(ideco))),
+                DataCell(Text(_formatCurrencyForIdeco(ideco))),
                 if (hasIdecoBalance)
-                  DataCell(Text(_formatCurrency(d.idecoBalance))),
+                  DataCell(Text(_formatCurrencyForIdeco(d.idecoBalance))),
                 if (hasIdecoBalance)
                   DataCell(
                     Text(
-                      _formatCurrency(d.idecoGain),
+                      _formatCurrencyForIdeco(d.idecoGain),
                       style: TextStyle(
                         color: d.idecoGain >= 0 ? Colors.green[700] : Colors.red[700],
                       ),
@@ -179,6 +181,21 @@ class PensionResultTable extends StatelessWidget {
 
   String _formatCurrency(double value) {
     if (value == 0) return '-';
+    final intValue = value.round();
+    // 3桁区切りのカンマ
+    final text = intValue.abs().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      if (i > 0 && (text.length - i) % 3 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(text[i]);
+    }
+    return intValue < 0 ? '-¥$buffer' : '¥$buffer';
+  }
+
+  String _formatCurrencyForIdeco(double value) {
+    // iDeCoは0でも必ず「¥0」と表示（-は禁止）
     final intValue = value.round();
     // 3桁区切りのカンマ
     final text = intValue.abs().toString();
