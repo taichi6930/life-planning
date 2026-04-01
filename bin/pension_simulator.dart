@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:life_planning/domain/services/pension_simulation_service.dart';
-import 'package:life_planning/domain/values/pension_result.dart';
+import 'package:life_planning/domain/values/investment_trust_input.dart';
 import 'package:life_planning/domain/values/national_pension_input.dart';
 import 'package:life_planning/domain/values/occupational_pension_input.dart';
-import 'package:life_planning/domain/values/ideco_input.dart';
-import 'package:life_planning/domain/values/investment_trust_input.dart';
+import 'package:life_planning/domain/values/pension_result.dart';
 
 /// ペンション計算シミュレーターのCLIツール
 /// 
