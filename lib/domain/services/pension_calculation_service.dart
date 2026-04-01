@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:life_planning/domain/values/ideco_input.dart';
+import 'package:life_planning/domain/values/investment_trust_input.dart';
 import 'package:life_planning/domain/values/national_pension_input.dart';
 import 'package:life_planning/domain/values/occupational_pension_input.dart';
 import 'package:life_planning/domain/values/pension_result.dart';
@@ -180,7 +181,7 @@ class PensionCalculationService {
   static PensionResult calculateIdeco(
     IdecoInput input, {
     double monthlyLivingExpenses = 0.0,
-    int targetAge = 90,
+    int targetAge = 100,
   }) {
     if (!input.isValid()) {
       // coverage:ignore-line
@@ -251,7 +252,7 @@ class PensionCalculationService {
     OccupationalPensionInput occupationalPensionInput,
     IdecoInput idecoInput, {
     double monthlyLivingExpenses = 0.0,
-    int targetAge = 90,
+    int targetAge = 100,
   }) {
     final base = calculateCombinedPension(nationalPensionInput, occupationalPensionInput);
     final fv = idecoInput.futureValue;
@@ -332,7 +333,7 @@ class PensionCalculationService {
     NationalPensionInput nationalPensionInput,
     IdecoInput idecoInput, {
     double monthlyLivingExpenses = 0.0,
-    int targetAge = 90,
+    int targetAge = 100,
   }) {
     final base = calculateNationalPension(nationalPensionInput);
     final fv = idecoInput.futureValue;
@@ -454,6 +455,448 @@ class PensionCalculationService {
     final remaining =
         balance * factor - monthlyWithdrawal * (factor - 1) / monthlyRate;
     return remaining > 0 ? remaining : 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 投資信託 引き出し計算ヘルパーは iDeCo と共通の _monthsUntilExhaustion / _balanceAfterDrawdown を使用
+  // ---------------------------------------------------------------------------
+
+  /// 投資信託計算（単体）
+  ///
+  /// 投資信託の積立額を計算し、生活費の不足分を補填するモデルで
+  /// 充足判定を行う。受給中も運用を継続するモデル。
+  ///
+  /// iDeCoとの違い: 引出開始年齢に制限なし（60歳未満でも引出可能）
+  ///
+  /// [monthlyLivingExpenses] 月額生活費（円）
+  /// [targetAge] 想定寿命（歳）
+  static PensionResult calculateInvestmentTrust(
+    InvestmentTrustInput input, {
+    double monthlyLivingExpenses = 0.0,
+    int targetAge = 100,
+  }) {
+    if (!input.isValid()) {
+      // coverage:ignore-line
+      throw ArgumentError('無効なInvestmentTrustInput値です');
+    }
+
+    final fv = input.futureValue;
+    final r = input.monthlyReturnRate;
+    const publicPensionMonthly = 0.0;
+    final shortfall = monthlyLivingExpenses > 0
+        ? (monthlyLivingExpenses - publicPensionMonthly)
+        : 0.0;
+    final effectiveShortfall = shortfall > 0 ? shortfall : 0.0;
+
+    double exhaustionAge = 0.0;
+    bool isSufficient = true;
+    double itMonthly = 0.0;
+
+    if (effectiveShortfall > 0 && fv > 0) {
+      itMonthly = effectiveShortfall;
+      final months = _monthsUntilExhaustion(fv, effectiveShortfall, r);
+      exhaustionAge = months == double.infinity
+          ? double.infinity
+          : input.withdrawalStartAge + months / 12.0;
+      isSufficient = exhaustionAge >= targetAge;
+    }
+
+    return PensionResult(
+      basicPensionMonthly: 0.0,
+      basicPensionAnnual: 0.0,
+      occupationalPensionMonthly: 0.0,
+      occupationalPensionAnnual: 0.0,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      monthlyShortfall: effectiveShortfall,
+      investmentTrustMonthly: itMonthly,
+      investmentTrustAnnual: itMonthly * 12,
+      investmentTrustFutureValue: fv,
+      investmentTrustExhaustionAge: exhaustionAge,
+      isInvestmentTrustSufficient: isSufficient,
+      targetAge: targetAge,
+      totalPensionMonthly: itMonthly,
+      totalPensionAnnual: itMonthly * 12,
+      adjustmentRate: 1.0,
+      pensionStartAge: input.withdrawalStartAge,
+    );
+  }
+
+  /// 基礎年金 + 投資信託（厚生年金なし）2段階モデル
+  ///
+  /// 自営業者・第1号被保険者向けシミュレーション。
+  /// 引出開始〜公的年金受給開始年齢まで投資信託で生活費を全額賄い、
+  /// 公的年金受給開始後は不足分を投資信託で補填する。受給中も運用継続。
+  ///
+  /// 詳細は calculateCombinedPensionWithInvestmentTrust のコメントを参照。
+  static PensionResult calculateNationalPensionWithInvestmentTrust(
+    NationalPensionInput nationalPensionInput,
+    InvestmentTrustInput investmentTrustInput, {
+    double monthlyLivingExpenses = 0.0,
+    int targetAge = 100,
+  }) {
+    final base = calculateNationalPension(nationalPensionInput);
+    return _applyInvestmentTrustToBase(
+      base: base,
+      investmentTrustInput: investmentTrustInput,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      targetAge: targetAge,
+      occupationalPensionMonthly: 0.0,
+      occupationalPensionAnnual: 0.0,
+    );
+  }
+
+  /// 複合年金計算（基礎年金 + 厚生年金 + 投資信託）2段階モデル
+  ///
+  /// 引出開始〜公的年金受給開始年齢まで投資信託で生活費を全額賄い、
+  /// 公的年金受給開始後は「生活費 - 公的年金」の不足分を投資信託で補填する。
+  /// 受給中も運用を継続するため年金現価公式を使用。
+  ///
+  /// 【Phase 1】投資信託引出開始〜公的年金受給開始年齢
+  ///   - 月額引出 = 月額生活費（全額）、残高は運用継続
+  ///
+  /// 【Phase 2】公的年金受給開始〜想定寿命
+  ///   - 月額不足分 = 月額生活費 - （基礎年金 + 厚生年金）
+  ///   - 投資信託で不足分を補填（運用継続）
+  static PensionResult calculateCombinedPensionWithInvestmentTrust(
+    NationalPensionInput nationalPensionInput,
+    OccupationalPensionInput occupationalPensionInput,
+    InvestmentTrustInput investmentTrustInput, {
+    double monthlyLivingExpenses = 0.0,
+    int targetAge = 100,
+  }) {
+    final base = calculateCombinedPension(nationalPensionInput, occupationalPensionInput);
+    return _applyInvestmentTrustToBase(
+      base: base,
+      investmentTrustInput: investmentTrustInput,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      targetAge: targetAge,
+      occupationalPensionMonthly: base.occupationalPensionMonthly,
+      occupationalPensionAnnual: base.occupationalPensionAnnual,
+    );
+  }
+
+  /// 投資信託2段階モデルの共通ロジック
+  ///
+  /// iDeCoの2段階モデルと同様の計算ロジック。
+  /// Phase 1: 引出開始〜公的年金受給開始（生活費全額を投資信託から引き出す）
+  /// Phase 2: 公的年金受給開始以降（不足分を投資信託で補填）
+  static PensionResult _applyInvestmentTrustToBase({
+    required PensionResult base,
+    required InvestmentTrustInput investmentTrustInput,
+    required double monthlyLivingExpenses,
+    required int targetAge,
+    required double occupationalPensionMonthly,
+    required double occupationalPensionAnnual,
+  }) {
+    final fv = investmentTrustInput.futureValue;
+    final r = investmentTrustInput.monthlyReturnRate;
+    final publicPensionMonthly = base.basicPensionMonthly + occupationalPensionMonthly;
+
+    // 2段階モデル: 投資信託引出開始〜公的年金受給開始の期間を計算
+    final itStartAge = investmentTrustInput.withdrawalStartAge;
+    final publicStartAge = base.pensionStartAge;
+    final prePensionMonths = publicStartAge > itStartAge
+        ? (publicStartAge - itStartAge) * 12
+        : 0;
+
+    // Phase 2の不足分（公的年金受給開始以降）
+    final phase2ShortfallRaw = monthlyLivingExpenses > 0
+        ? monthlyLivingExpenses - publicPensionMonthly
+        : 0.0;
+    final phase2Shortfall = phase2ShortfallRaw > 0 ? phase2ShortfallRaw : 0.0;
+
+    double exhaustionAge = 0.0;
+    bool isSufficient = true;
+    double itMonthly = 0.0;
+
+    if (monthlyLivingExpenses > 0 && fv > 0) {
+      // Phase 1: 引出開始〜公的年金受給開始（運用しながら生活費を全額引き出す）
+      final remainingAfterPhase1 =
+          _balanceAfterDrawdown(fv, monthlyLivingExpenses, r, prePensionMonths);
+
+      if (remainingAfterPhase1 <= 0) {
+        // Phase 1中に投資信託が枯渇
+        final months = _monthsUntilExhaustion(fv, monthlyLivingExpenses, r);
+        exhaustionAge = itStartAge + months / 12.0;
+        isSufficient = exhaustionAge >= targetAge;
+        itMonthly = 0.0;
+      } else if (phase2Shortfall > 0) {
+        // Phase 2: 公的年金受給開始以降、運用しながら不足分を補填
+        itMonthly = phase2Shortfall;
+        final months = _monthsUntilExhaustion(remainingAfterPhase1, phase2Shortfall, r);
+        exhaustionAge = months == double.infinity
+            ? double.infinity
+            : publicStartAge.toDouble() + months / 12.0;
+        isSufficient = exhaustionAge >= targetAge;
+      } else {
+        // 公的年金だけで生活費を賄える（投資信託は余剰）
+        isSufficient = true;
+        itMonthly = 0.0;
+      }
+    }
+
+    return PensionResult(
+      basicPensionMonthly: base.basicPensionMonthly,
+      basicPensionAnnual: base.basicPensionAnnual,
+      occupationalPensionMonthly: occupationalPensionMonthly,
+      occupationalPensionAnnual: occupationalPensionAnnual,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      monthlyShortfall: phase2Shortfall,
+      investmentTrustMonthly: itMonthly,
+      investmentTrustAnnual: itMonthly * 12,
+      investmentTrustFutureValue: fv,
+      investmentTrustExhaustionAge: exhaustionAge,
+      isInvestmentTrustSufficient: isSufficient,
+      targetAge: targetAge,
+      totalPensionMonthly: base.basicPensionMonthly + occupationalPensionMonthly + itMonthly,
+      totalPensionAnnual: base.basicPensionAnnual + occupationalPensionAnnual + itMonthly * 12,
+      adjustmentRate: base.adjustmentRate,
+      pensionStartAge: base.pensionStartAge,
+    );
+  }
+
+  /// 基礎年金 + iDeCo + 投資信託（厚生年金なし）複合モデル
+  ///
+  /// iDeCoと投資信託を併用するケース。
+  /// 投資信託はiDeCoのバックアップとして機能する:
+  ///   - 引出開始〜60歳: 投資信託が生活費をカバー
+  ///   - 60歳〜公的年金受給開始: iDeCoがカバー、投資信託は運用のみ
+  ///   - 公的年金受給開始〜iDeCo枯渇: iDeCoが不足分をカバー、投資信託は運用のみ
+  ///   - iDeCo枯渇後: 投資信託が不足分をカバー
+  static PensionResult calculateNationalPensionWithIdecoAndInvestmentTrust(
+    NationalPensionInput nationalPensionInput,
+    IdecoInput idecoInput,
+    InvestmentTrustInput investmentTrustInput, {
+    double monthlyLivingExpenses = 0.0,
+    int targetAge = 100,
+  }) {
+    final base = calculateNationalPension(nationalPensionInput);
+    return _applyIdecoAndInvestmentTrustToBase(
+      base: base,
+      idecoInput: idecoInput,
+      investmentTrustInput: investmentTrustInput,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      targetAge: targetAge,
+      occupationalPensionMonthly: 0.0,
+      occupationalPensionAnnual: 0.0,
+    );
+  }
+
+  /// 複合年金計算（基礎年金 + 厚生年金 + iDeCo + 投資信託）複合モデル
+  ///
+  /// iDeCoと投資信託を併用するケース。
+  /// 投資信託はiDeCoのバックアップとして機能する:
+  ///   - 引出開始〜60歳: 投資信託が生活費をカバー
+  ///   - 60歳〜公的年金受給開始: iDeCoがカバー、投資信託は運用のみ
+  ///   - 公的年金受給開始〜iDeCo枯渇: iDeCoが不足分をカバー、投資信託は運用のみ
+  ///   - iDeCo枯渇後: 投資信託が不足分をカバー
+  static PensionResult calculateCombinedPensionWithIdecoAndInvestmentTrust(
+    NationalPensionInput nationalPensionInput,
+    OccupationalPensionInput occupationalPensionInput,
+    IdecoInput idecoInput,
+    InvestmentTrustInput investmentTrustInput, {
+    double monthlyLivingExpenses = 0.0,
+    int targetAge = 100,
+  }) {
+    final base = calculateCombinedPension(nationalPensionInput, occupationalPensionInput);
+    return _applyIdecoAndInvestmentTrustToBase(
+      base: base,
+      idecoInput: idecoInput,
+      investmentTrustInput: investmentTrustInput,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      targetAge: targetAge,
+      occupationalPensionMonthly: base.occupationalPensionMonthly,
+      occupationalPensionAnnual: base.occupationalPensionAnnual,
+    );
+  }
+
+  /// iDeCo + 投資信託 複合モデルの共通ロジック
+  ///
+  /// iDeCoは独立した2段階モデルで計算し、投資信託はiDeCoのバックアップとして機能。
+  ///
+  /// 【iDeCo】標準2段階モデル（投資信託と独立して計算）
+  ///   Phase 1b: 60歳 → 公的年金受給開始（生活費全額をカバー）
+  ///   Phase 2: 公的年金受給開始以降（不足分をカバー）
+  ///
+  /// 【投資信託】iDeCoバックアップモデル
+  ///   Step 1: 引出開始 → 60歳（生活費全額をカバー）
+  ///   Step 2: 60歳 → iDeCo枯渇（iDeCoがカバー中、運用のみ）
+  ///   Step 3: iDeCo枯渇後（不足分をカバー）
+  static PensionResult _applyIdecoAndInvestmentTrustToBase({
+    required PensionResult base,
+    required IdecoInput idecoInput,
+    required InvestmentTrustInput investmentTrustInput,
+    required double monthlyLivingExpenses,
+    required int targetAge,
+    required double occupationalPensionMonthly,
+    required double occupationalPensionAnnual,
+  }) {
+    final idecoFV = idecoInput.futureValue;
+    final idecoR = idecoInput.monthlyReturnRate;
+    final itFV = investmentTrustInput.futureValue;
+    final itR = investmentTrustInput.monthlyReturnRate;
+    final publicPensionMonthly = base.basicPensionMonthly + occupationalPensionMonthly;
+
+    final idecoStartAge = idecoInput.pensionStartAge; // 60
+    final itStartAge = investmentTrustInput.withdrawalStartAge;
+    final publicStartAge = base.pensionStartAge;
+
+    // Phase 2の不足分（公的年金受給開始以降）
+    final phase2ShortfallRaw = monthlyLivingExpenses > 0
+        ? monthlyLivingExpenses - publicPensionMonthly
+        : 0.0;
+    final phase2Shortfall = phase2ShortfallRaw > 0 ? phase2ShortfallRaw : 0.0;
+
+    // === iDeCo: 標準2段階モデル（投資信託と独立して計算） ===
+    final idecoPrePensionMonths = publicStartAge > idecoStartAge
+        ? (publicStartAge - idecoStartAge) * 12
+        : 0;
+
+    double idecoExhaustionAge = 0.0;
+    bool isIdecoSufficient = true;
+    double idecoMonthly = 0.0;
+
+    if (monthlyLivingExpenses > 0 && idecoFV > 0) {
+      final idecoRemainingAfterPhase1 = _balanceAfterDrawdown(
+          idecoFV, monthlyLivingExpenses, idecoR, idecoPrePensionMonths);
+
+      if (idecoRemainingAfterPhase1 <= 0) {
+        // Phase 1b中にiDeCo枯渇
+        final months =
+            _monthsUntilExhaustion(idecoFV, monthlyLivingExpenses, idecoR);
+        idecoExhaustionAge = idecoStartAge + months / 12.0;
+        isIdecoSufficient = idecoExhaustionAge >= targetAge;
+        idecoMonthly = 0.0;
+      } else if (phase2Shortfall > 0) {
+        // Phase 2: iDeCoで不足分を補填
+        idecoMonthly = phase2Shortfall;
+        final months = _monthsUntilExhaustion(
+            idecoRemainingAfterPhase1, phase2Shortfall, idecoR);
+        idecoExhaustionAge = months == double.infinity
+            ? double.infinity
+            : publicStartAge.toDouble() + months / 12.0;
+        isIdecoSufficient = idecoExhaustionAge >= targetAge;
+      }
+    }
+
+    // === 投資信託: iDeCoバックアップモデル ===
+    double itExhaustionAge = 0.0;
+    bool isItSufficient = true;
+    double itMonthly = 0.0;
+
+    if (monthlyLivingExpenses > 0 && itFV > 0) {
+      double itBalance = itFV;
+
+      // Step 1: IT引出開始 → iDeCo開始(60歳) — ITが生活費をカバー
+      if (itStartAge < idecoStartAge) {
+        final step1Months = (idecoStartAge - itStartAge) * 12;
+        itBalance = _balanceAfterDrawdown(
+            itBalance, monthlyLivingExpenses, itR, step1Months);
+      }
+
+      if (itBalance <= 0) {
+        // Step 1でIT枯渇
+        final months =
+            _monthsUntilExhaustion(itFV, monthlyLivingExpenses, itR);
+        itExhaustionAge = itStartAge + months / 12.0;
+        isItSufficient = itExhaustionAge >= targetAge;
+      } else if (idecoExhaustionAge == 0.0 ||
+          idecoExhaustionAge == double.infinity) {
+        // iDeCoが永久に持つ or iDeCoなし → IT補填不要
+        isItSufficient = true;
+        itMonthly = 0.0;
+      } else {
+        // iDeCoが有限期間で枯渇 → ITがバックアップ
+
+        // Step 2: iDeCoカバー期間はITが運用のみ
+        final compoundStart =
+            math.max(idecoStartAge, itStartAge).toDouble();
+        if (idecoExhaustionAge > compoundStart) {
+          final compoundMonths =
+              ((idecoExhaustionAge - compoundStart) * 12).round();
+          if (itR > 0 && compoundMonths > 0) {
+            itBalance = itBalance *
+                math.pow(1 + itR, compoundMonths).toDouble();
+          }
+        }
+
+        // Step 3: iDeCo枯渇後 → ITが不足分をカバー
+        if (idecoExhaustionAge < publicStartAge.toDouble()) {
+          // Case A: iDeCoが公的年金受給前に枯渇
+          // → ITが年金受給開始まで生活費を全額カバー
+          final prePensionMonths =
+              ((publicStartAge - idecoExhaustionAge) * 12).round();
+          final itBalanceAtIdecoExhaustion = itBalance;
+          itBalance = _balanceAfterDrawdown(
+              itBalance, monthlyLivingExpenses, itR, prePensionMonths);
+
+          if (itBalance <= 0) {
+            // 年金受給前にITも枯渇
+            final months = _monthsUntilExhaustion(
+                itBalanceAtIdecoExhaustion, monthlyLivingExpenses, itR);
+            itExhaustionAge = idecoExhaustionAge + months / 12.0;
+            isItSufficient = itExhaustionAge >= targetAge;
+            itMonthly = 0.0;
+          } else if (phase2Shortfall > 0) {
+            // 年金受給後: ITが不足分をカバー
+            itMonthly = phase2Shortfall;
+            final months =
+                _monthsUntilExhaustion(itBalance, phase2Shortfall, itR);
+            itExhaustionAge = months == double.infinity
+                ? double.infinity
+                : publicStartAge.toDouble() + months / 12.0;
+            isItSufficient = itExhaustionAge >= targetAge;
+          } else {
+            isItSufficient = true;
+            itMonthly = 0.0;
+          }
+        } else {
+          // Case B: iDeCoが公的年金受給後に枯渇
+          // → ITがiDeCo枯渇後に不足分をカバー
+          if (phase2Shortfall > 0) {
+            itMonthly = phase2Shortfall;
+            final months =
+                _monthsUntilExhaustion(itBalance, phase2Shortfall, itR);
+            itExhaustionAge = months == double.infinity
+                ? double.infinity
+                : idecoExhaustionAge + months / 12.0;
+            isItSufficient = itExhaustionAge >= targetAge;
+          } else {
+            isItSufficient = true;
+            itMonthly = 0.0;
+          }
+        }
+      }
+    }
+
+    return PensionResult(
+      basicPensionMonthly: base.basicPensionMonthly,
+      basicPensionAnnual: base.basicPensionAnnual,
+      occupationalPensionMonthly: occupationalPensionMonthly,
+      occupationalPensionAnnual: occupationalPensionAnnual,
+      idecoMonthly: idecoMonthly,
+      idecoAnnual: idecoMonthly * 12,
+      monthlyLivingExpenses: monthlyLivingExpenses,
+      monthlyShortfall: phase2Shortfall,
+      idecoFutureValue: idecoFV,
+      idecoExhaustionAge: idecoExhaustionAge,
+      isIdecoSufficient: isIdecoSufficient,
+      investmentTrustMonthly: itMonthly,
+      investmentTrustAnnual: itMonthly * 12,
+      investmentTrustFutureValue: itFV,
+      investmentTrustExhaustionAge: itExhaustionAge,
+      isInvestmentTrustSufficient: isItSufficient,
+      targetAge: targetAge,
+      totalPensionMonthly: base.basicPensionMonthly +
+          occupationalPensionMonthly +
+          idecoMonthly +
+          itMonthly,
+      totalPensionAnnual: base.basicPensionAnnual +
+          occupationalPensionAnnual +
+          (idecoMonthly + itMonthly) * 12,
+      adjustmentRate: base.adjustmentRate,
+      pensionStartAge: base.pensionStartAge,
+    );
   }
 
   // ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ void main() {
       expect(map.idecoAnnualReturnRate, equals(3.0));
       expect(map.idecoCurrentBalance, equals(0));
       expect(map.monthlyLivingExpenses, equals(0));
-      expect(map.targetAge, equals(90));
+      expect(map.targetAge, equals(100));
     });
 
     test('全パラメータを指定して生成できる', () {

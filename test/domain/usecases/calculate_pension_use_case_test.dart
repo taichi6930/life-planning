@@ -122,5 +122,62 @@ void main() {
 
       expect(result.adjustmentRate, equals(1.0));
     });
+
+    group('iDeCo+投資信託の複合ルーティング', () {
+      test('iDeCo+投資信託（厚生なし）: 両方のFVが正の値', () {
+        final result = CalculatePensionUseCase.execute(
+          paymentMonths: 480,
+          desiredPensionStartAge: 65,
+          idecoMonthlyContribution: 23000,
+          idecoCurrentAge: 30,
+          idecoAnnualReturnRate: 3.0,
+          investmentTrustMonthlyContribution: 30000,
+          investmentTrustCurrentAge: 30,
+          investmentTrustAnnualReturnRate: 5.0,
+          investmentTrustWithdrawalStartAge: 55,
+          monthlyLivingExpenses: 200000,
+          targetAge: 100,
+        );
+
+        // 基礎年金は正の値
+        expect(result.basicPensionMonthly, greaterThan(0));
+        // 厚生年金は0
+        expect(result.occupationalPensionMonthly, equals(0.0));
+        // iDeCo FV > 0
+        expect(result.idecoFutureValue, greaterThan(0));
+        // IT FV > 0
+        expect(result.investmentTrustFutureValue, greaterThan(0));
+      });
+
+      test('iDeCo+投資信託+厚生年金: 3つの年金ソースが全て正の値', () {
+        final result = CalculatePensionUseCase.execute(
+          paymentMonths: 480,
+          desiredPensionStartAge: 65,
+          occupationalPaymentMonths: 360,
+          monthlySalary: 300000,
+          bonus: 500000,
+          idecoMonthlyContribution: 23000,
+          idecoCurrentAge: 30,
+          idecoAnnualReturnRate: 3.0,
+          investmentTrustMonthlyContribution: 30000,
+          investmentTrustCurrentAge: 30,
+          investmentTrustAnnualReturnRate: 5.0,
+          investmentTrustWithdrawalStartAge: 55,
+          monthlyLivingExpenses: 300000,
+          targetAge: 100,
+        );
+
+        // 基礎年金
+        expect(result.basicPensionMonthly, greaterThan(0));
+        // 厚生年金
+        expect(result.occupationalPensionMonthly, greaterThan(0));
+        // iDeCo FV
+        expect(result.idecoFutureValue, greaterThan(0));
+        // IT FV
+        expect(result.investmentTrustFutureValue, greaterThan(0));
+        // 生活費
+        expect(result.monthlyLivingExpenses, 300000);
+      });
+    });
   });
 }

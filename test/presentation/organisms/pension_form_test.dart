@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:life_planning/application/dtos/pension_form_values.dart';
 import 'package:life_planning/presentation/organisms/pension_form.dart';
 
 void main() {
   Widget buildTestWidget({
-    Function(int, int, int, int, int, int, int, double, int, int, int)? onSubmit,
-    Function(int, int, int, int, int, int, int, double, int, int, int)? onFieldChanged,
+    ValueChanged<PensionFormValues>? onSubmit,
+    ValueChanged<PensionFormValues>? onFieldChanged,
     bool isLoading = false,
     int? initialAge,
     int? initialPaymentMonths,
@@ -71,8 +72,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('65歳'), findsOneWidget);
-      // iDeCo追加で Slider は3つ（受給開始年齢、想定利回り、想定寿命）
-      expect(find.byType(Slider), findsNWidgets(3));
+      // iDeCo・投資信託追加で Slider は5つ（受給開始年齢、iDeCo利回り、想定寿命、投資信託利回り、投資信託引出開始年齢）
+      expect(find.byType(Slider), findsNWidgets(5));
     });
 
     testWidgets('ローディング中はボタンにインジケータが表示される', (WidgetTester tester) async {
@@ -98,7 +99,7 @@ void main() {
       // → _age==null なので SnackBar
       bool submitted = false;
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (a, m, o, s, b, d, ic, ir, cb, le, ta) => submitted = true,
+        onSubmit: (values) => submitted = true,
       ));
       await tester.pumpAndSettle();
 
@@ -123,8 +124,8 @@ void main() {
     testWidgets('ケース4: age=35, months=440 で計算ボタン → onSubmit呼出', (WidgetTester tester) async {
       List<int>? submittedValues;
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (a, m, o, s, b, d, ic, ir, cb, le, ta) {
-          submittedValues = [a, m, o, s, b, d];
+        onSubmit: (values) {
+          submittedValues = [values.currentAge, values.paymentMonths, values.occupationalPaymentMonths, values.monthlySalary, values.bonus, values.desiredPensionStartAge];
         },
       ));
       await tester.pumpAndSettle();
@@ -150,8 +151,8 @@ void main() {
     testWidgets('ケース5: 全フィールド入力済で計算ボタン → 正しい値で onSubmit呼出', (WidgetTester tester) async {
       List<int>? submittedValues;
       await tester.pumpWidget(buildTestWidget(
-        onSubmit: (a, m, o, s, b, d, ic, ir, cb, le, ta) {
-          submittedValues = [a, m, o, s, b, d];
+        onSubmit: (values) {
+          submittedValues = [values.currentAge, values.paymentMonths, values.occupationalPaymentMonths, values.monthlySalary, values.bonus, values.desiredPensionStartAge];
         },
       ));
       await tester.pumpAndSettle();
@@ -184,7 +185,7 @@ void main() {
     testWidgets('年齢入力で onFieldChanged が呼ばれる', (WidgetTester tester) async {
       int callCount = 0;
       await tester.pumpWidget(buildTestWidget(
-        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => callCount++,
+        onFieldChanged: (values) => callCount++,
       ));
       await tester.pumpAndSettle();
       callCount = 0; // initState の addPostFrameCallback 分をリセット
@@ -210,7 +211,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         initialAge: 30,
         initialPaymentMonths: 360,
-        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => lastOccMonths = o,
+        onFieldChanged: (values) => lastOccMonths = values.occupationalPaymentMonths,
       ));
       await tester.pumpAndSettle();
 
@@ -229,7 +230,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         initialAge: 30,
         initialPaymentMonths: 360,
-        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => inputCount++,
+        onFieldChanged: (values) => inputCount++,
       ));
       await tester.pumpAndSettle();
       inputCount = 0;
@@ -311,7 +312,7 @@ void main() {
         initialAge: 30,
         initialPaymentMonths: 360,
         initialDesiredPensionStartAge: 65,
-        onFieldChanged: (a, m, o, s, b, d, ic, ir, cb, le, ta) => lastStartAge = d,
+        onFieldChanged: (values) => lastStartAge = values.desiredPensionStartAge,
       ));
       await tester.pumpAndSettle();
 

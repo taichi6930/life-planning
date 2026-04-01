@@ -1,5 +1,6 @@
 import '../services/pension_calculation_service.dart';
 import '../values/ideco_input.dart';
+import '../values/investment_trust_input.dart';
 import '../values/national_pension_input.dart';
 import '../values/occupational_pension_input.dart';
 import '../values/pension_result.dart';
@@ -31,6 +32,11 @@ class CalculatePensionUseCase {
   /// [idecoCurrentAge] iDeCo加入者の現在年齢
   /// [idecoAnnualReturnRate] iDeCo想定年利回り（%）
   /// [idecoCurrentBalance] iDeCo現在の投資残高（円）
+  /// [investmentTrustMonthlyContribution] 投資信託月額積立額（0の場合は投資信託計算なし）
+  /// [investmentTrustCurrentAge] 投資信託加入者の現在年齢
+  /// [investmentTrustAnnualReturnRate] 投資信託想定年利回り（%）
+  /// [investmentTrustWithdrawalStartAge] 投資信託引出開始年齢
+  /// [investmentTrustCurrentBalance] 投資信託現在の残高（円）
   /// [monthlyLivingExpenses] 月額生活費（円）
   /// [targetAge] 想定寿命（歳）
   ///
@@ -45,8 +51,13 @@ class CalculatePensionUseCase {
     int idecoCurrentAge = 30,
     double idecoAnnualReturnRate = 3.0,
     int idecoCurrentBalance = 0,
+    int investmentTrustMonthlyContribution = 0,
+    int investmentTrustCurrentAge = 30,
+    double investmentTrustAnnualReturnRate = 5.0,
+    int investmentTrustWithdrawalStartAge = InvestmentTrustInput.defaultWithdrawalStartAge,
+    int investmentTrustCurrentBalance = 0,
     int monthlyLivingExpenses = 0,
-    int targetAge = 90,
+    int targetAge = 100,
   }) {
     final nationalInput = NationalPensionInput(
       fullContribution: paymentMonths,
@@ -64,6 +75,57 @@ class CalculatePensionUseCase {
         (idecoMonthlyContribution > 0 &&
                 idecoCurrentAge < IdecoInput.minPensionReceiptAge ||
             idecoCurrentBalance > 0);
+
+    // 投資信託は年齢制限なし。拠出額 > 0 または既存残高がある場合に計算を実行する
+    final hasInvestmentTrust = investmentTrustCurrentAge >= 0 &&
+        (investmentTrustMonthlyContribution > 0 || investmentTrustCurrentBalance > 0);
+
+    if (hasIdeco && hasInvestmentTrust) {
+      final idecoInput = IdecoInput(
+        monthlyContribution: idecoMonthlyContribution,
+        currentAge: idecoCurrentAge,
+        expectedAnnualReturnRate: idecoAnnualReturnRate,
+        currentBalance: idecoCurrentBalance,
+      );
+
+      final itInput = InvestmentTrustInput(
+        monthlyContribution: investmentTrustMonthlyContribution > 0
+            ? investmentTrustMonthlyContribution
+            : 1,
+        currentAge: investmentTrustCurrentAge,
+        withdrawalStartAge: investmentTrustWithdrawalStartAge,
+        contributionEndAge: investmentTrustWithdrawalStartAge,
+        expectedAnnualReturnRate: investmentTrustAnnualReturnRate,
+        currentBalance: investmentTrustCurrentBalance,
+      );
+
+      if (hasOccupational) {
+        final occupationalInput = OccupationalPensionInput(
+          enrollmentMonths: occupationalPaymentMonths,
+          averageMonthlyReward: monthlySalary,
+          averageBonusReward: bonus,
+          desiredPensionStartAge: desiredPensionStartAge,
+        );
+        return PensionCalculationService
+            .calculateCombinedPensionWithIdecoAndInvestmentTrust(
+          nationalInput,
+          occupationalInput,
+          idecoInput,
+          itInput,
+          monthlyLivingExpenses: monthlyLivingExpenses.toDouble(),
+          targetAge: targetAge,
+        );
+      } else {
+        return PensionCalculationService
+            .calculateNationalPensionWithIdecoAndInvestmentTrust(
+          nationalInput,
+          idecoInput,
+          itInput,
+          monthlyLivingExpenses: monthlyLivingExpenses.toDouble(),
+          targetAge: targetAge,
+        );
+      }
+    }
 
     if (hasIdeco) {
       final idecoInput = IdecoInput(
@@ -94,6 +156,42 @@ class CalculatePensionUseCase {
         return PensionCalculationService.calculateNationalPensionWithIdeco(
           nationalInput,
           idecoInput,
+          monthlyLivingExpenses: monthlyLivingExpenses.toDouble(),
+          targetAge: targetAge,
+        );
+      }
+    }
+
+    if (hasInvestmentTrust) {
+      final itInput = InvestmentTrustInput(
+        monthlyContribution: investmentTrustMonthlyContribution > 0
+            ? investmentTrustMonthlyContribution
+            : 1, // 残高のみの場合でもコンストラクタ要件を満たすため最小値
+        currentAge: investmentTrustCurrentAge,
+        withdrawalStartAge: investmentTrustWithdrawalStartAge,
+        contributionEndAge: investmentTrustWithdrawalStartAge,
+        expectedAnnualReturnRate: investmentTrustAnnualReturnRate,
+        currentBalance: investmentTrustCurrentBalance,
+      );
+
+      if (hasOccupational) {
+        final occupationalInput = OccupationalPensionInput(
+          enrollmentMonths: occupationalPaymentMonths,
+          averageMonthlyReward: monthlySalary,
+          averageBonusReward: bonus,
+          desiredPensionStartAge: desiredPensionStartAge,
+        );
+        return PensionCalculationService.calculateCombinedPensionWithInvestmentTrust(
+          nationalInput,
+          occupationalInput,
+          itInput,
+          monthlyLivingExpenses: monthlyLivingExpenses.toDouble(),
+          targetAge: targetAge,
+        );
+      } else {
+        return PensionCalculationService.calculateNationalPensionWithInvestmentTrust(
+          nationalInput,
+          itInput,
           monthlyLivingExpenses: monthlyLivingExpenses.toDouble(),
           targetAge: targetAge,
         );

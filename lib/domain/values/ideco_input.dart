@@ -152,10 +152,19 @@ class IdecoInput {
   /// 例: 年利3.0% → 月利0.25% = 0.0025
   double get monthlyReturnRate => expectedAnnualReturnRate / 100.0 / 12.0;
 
-  /// 積立終了時点での将来価値（FV）を計算
+  /// 受給開始時点での将来価値（FV）を計算
   ///
-  /// 既存残高 + 毎月の拠出額を複利運用した将来価値:
-  ///   FV = currentBalance × (1 + r_m)^n + PMT × ((1 + r_m)^n - 1) / r_m
+  /// 拠出期間中の複利運用 + 拠出終了〜受給開始間のギャップ期間の複利運用を含む。
+  ///
+  /// 【Step 1】拠出期間の将来価値:
+  ///   FV_contrib = currentBalance × (1 + r_m)^n + PMT × ((1 + r_m)^n - 1) / r_m
+  ///
+  /// 【Step 2】ギャップ期間（拠出終了〜受給開始）の複利運用:
+  ///   FV = FV_contrib × (1 + r_m)^gapMonths
+  ///
+  /// 例: 30歳開始、60歳拠出終了、65歳受給開始の場合
+  ///   → 30〜60歳の拠出期間でFV_contribを計算
+  ///   → 60〜65歳の5年間（60ヶ月）は拠出なしで運用継続
   ///
   /// 利回り0%（元本保証型）の場合は単純積算:
   ///   FV = currentBalance + PMT × n
@@ -170,8 +179,21 @@ class IdecoInput {
       return balance + pmt * n;
     }
 
+    // Step 1: 拠出期間中のFV
     final compoundFactor = (1 + r).pow(n);
-    return balance * compoundFactor + pmt * (compoundFactor - 1) / r;
+    final fvAtContributionEnd =
+        balance * compoundFactor + pmt * (compoundFactor - 1) / r;
+
+    // Step 2: 拠出終了〜受給開始のギャップ期間の複利運用
+    final effectiveEndAge = pensionStartAge < contributionEndAge
+        ? pensionStartAge
+        : contributionEndAge;
+    final gapMonths = (pensionStartAge - effectiveEndAge) * 12;
+    if (gapMonths > 0) {
+      return fvAtContributionEnd * (1 + r).pow(gapMonths);
+    }
+
+    return fvAtContributionEnd;
   }
 
   /// 入力値の妥当性を検証する

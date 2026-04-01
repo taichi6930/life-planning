@@ -29,6 +29,11 @@ class PensionFormState {
   final int idecoCurrentBalance;
   final int monthlyLivingExpenses;
   final int targetAge;
+  final int investmentTrustMonthlyContribution;
+  final int investmentTrustCurrentAge;
+  final double investmentTrustAnnualReturnRate;
+  final int investmentTrustWithdrawalStartAge;
+  final int investmentTrustCurrentBalance;
   final bool isLoading;
   final PensionResult? result;
   final String? error;
@@ -44,7 +49,12 @@ class PensionFormState {
     this.idecoAnnualReturnRate = 3.0,
     this.idecoCurrentBalance = 0,
     this.monthlyLivingExpenses = 0,
-    this.targetAge = 90,
+    this.targetAge = 100,
+    this.investmentTrustMonthlyContribution = 0,
+    this.investmentTrustCurrentAge = 30,
+    this.investmentTrustAnnualReturnRate = 5.0,
+    this.investmentTrustWithdrawalStartAge = 60,
+    this.investmentTrustCurrentBalance = 0,
     this.isLoading = false,
     this.result,
     this.error,
@@ -63,6 +73,11 @@ class PensionFormState {
     int? idecoCurrentBalance,
     int? monthlyLivingExpenses,
     int? targetAge,
+    int? investmentTrustMonthlyContribution,
+    int? investmentTrustCurrentAge,
+    double? investmentTrustAnnualReturnRate,
+    int? investmentTrustWithdrawalStartAge,
+    int? investmentTrustCurrentBalance,
     bool? isLoading,
     Object? result = _sentinel,
     Object? error = _sentinel,
@@ -79,6 +94,16 @@ class PensionFormState {
       idecoCurrentBalance: idecoCurrentBalance ?? this.idecoCurrentBalance,
       monthlyLivingExpenses: monthlyLivingExpenses ?? this.monthlyLivingExpenses,
       targetAge: targetAge ?? this.targetAge,
+      investmentTrustMonthlyContribution:
+          investmentTrustMonthlyContribution ?? this.investmentTrustMonthlyContribution,
+      investmentTrustCurrentAge:
+          investmentTrustCurrentAge ?? this.investmentTrustCurrentAge,
+      investmentTrustAnnualReturnRate:
+          investmentTrustAnnualReturnRate ?? this.investmentTrustAnnualReturnRate,
+      investmentTrustWithdrawalStartAge:
+          investmentTrustWithdrawalStartAge ?? this.investmentTrustWithdrawalStartAge,
+      investmentTrustCurrentBalance:
+          investmentTrustCurrentBalance ?? this.investmentTrustCurrentBalance,
       isLoading: isLoading ?? this.isLoading,
       result: identical(result, _sentinel) ? this.result : result as PensionResult?,
       error: identical(error, _sentinel) ? this.error : error as String?,
@@ -145,6 +170,31 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
     state = state.copyWith(targetAge: age);
   }
 
+  /// 投資信託月額積立額を更新
+  void setInvestmentTrustMonthlyContribution(int amount) {
+    state = state.copyWith(investmentTrustMonthlyContribution: amount);
+  }
+
+  /// 投資信託現在年齢を更新
+  void setInvestmentTrustCurrentAge(int age) {
+    state = state.copyWith(investmentTrustCurrentAge: age);
+  }
+
+  /// 投資信託想定年利回りを更新
+  void setInvestmentTrustAnnualReturnRate(double rate) {
+    state = state.copyWith(investmentTrustAnnualReturnRate: rate);
+  }
+
+  /// 投資信託引出開始年齢を更新
+  void setInvestmentTrustWithdrawalStartAge(int age) {
+    state = state.copyWith(investmentTrustWithdrawalStartAge: age);
+  }
+
+  /// 投資信託現在残高を更新
+  void setInvestmentTrustCurrentBalance(int amount) {
+    state = state.copyWith(investmentTrustCurrentBalance: amount);
+  }
+
   /// 年金計算を実行
   ///
   /// ビジネスロジックの選択は CalculatePensionUseCase に委譲。
@@ -170,6 +220,14 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
         idecoCurrentBalance: state.idecoCurrentBalance,
         monthlyLivingExpenses: state.monthlyLivingExpenses,
         targetAge: state.targetAge,
+        investmentTrustMonthlyContribution:
+            state.investmentTrustMonthlyContribution,
+        investmentTrustCurrentAge: state.investmentTrustCurrentAge,
+        investmentTrustAnnualReturnRate:
+            state.investmentTrustAnnualReturnRate,
+        investmentTrustWithdrawalStartAge:
+            state.investmentTrustWithdrawalStartAge,
+        investmentTrustCurrentBalance: state.investmentTrustCurrentBalance,
       );
 
       state = state.copyWith(
@@ -189,6 +247,14 @@ class PensionFormNotifier extends StateNotifier<PensionFormState> {
         idecoCurrentBalance: state.idecoCurrentBalance,
         monthlyLivingExpenses: state.monthlyLivingExpenses,
         targetAge: state.targetAge,
+        investmentTrustMonthlyContribution:
+            state.investmentTrustMonthlyContribution,
+        investmentTrustCurrentAge: state.investmentTrustCurrentAge,
+        investmentTrustAnnualReturnRate:
+            state.investmentTrustAnnualReturnRate,
+        investmentTrustWithdrawalStartAge:
+            state.investmentTrustWithdrawalStartAge,
+        investmentTrustCurrentBalance: state.investmentTrustCurrentBalance,
       );
     } catch (e) {
       state = state.copyWith(
@@ -246,5 +312,14 @@ final pensionByAgeChartProvider = Provider<List<PensionByAgeData>?>((ref) {
   return BuildPensionChartUseCase.execute(
     result: result,
     publicPensionStartAge: formState.desiredPensionStartAge,
+    investmentTrustWithdrawalStartAge: formState.investmentTrustWithdrawalStartAge,
+    idecoCurrentAge: formState.currentAge ?? 30,
+    idecoMonthlyContribution: formState.idecoMonthlyContribution,
+    idecoAnnualReturnRate: formState.idecoAnnualReturnRate,
+    idecoCurrentBalance: formState.idecoCurrentBalance,
+    investmentTrustMonthlyContribution: formState.investmentTrustMonthlyContribution,
+    investmentTrustCurrentAge: formState.investmentTrustCurrentAge,
+    investmentTrustAnnualReturnRate: formState.investmentTrustAnnualReturnRate,
+    investmentTrustCurrentBalance: formState.investmentTrustCurrentBalance,
   );
 });

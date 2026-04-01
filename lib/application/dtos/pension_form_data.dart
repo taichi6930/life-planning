@@ -23,6 +23,11 @@ class PensionFormDataMap {
   final int idecoCurrentBalance;
   final int monthlyLivingExpenses;
   final int targetAge;
+  final int investmentTrustMonthlyContribution;
+  final int investmentTrustCurrentAge;
+  final double investmentTrustAnnualReturnRate;
+  final int investmentTrustWithdrawalStartAge;
+  final int investmentTrustCurrentBalance;
 
   PensionFormDataMap({
     this.currentAge,
@@ -35,6 +40,11 @@ class PensionFormDataMap {
     this.idecoAnnualReturnRate = 3.0,
     this.idecoCurrentBalance = 0,
     this.monthlyLivingExpenses = 0,
-    this.targetAge = 90,
+    this.targetAge = 100,
+    this.investmentTrustMonthlyContribution = 0,
+    this.investmentTrustCurrentAge = 30,
+    this.investmentTrustAnnualReturnRate = 5.0,
+    this.investmentTrustWithdrawalStartAge = 60,
+    this.investmentTrustCurrentBalance = 0,
   });
 }

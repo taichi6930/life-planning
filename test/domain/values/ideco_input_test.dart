@@ -178,6 +178,79 @@ void main() {
       );
       expect(input.futureValue, closeTo(600000, 1));
     });
+
+    test('ギャップ期間の複利運用（拠出終了60歳→受給開始65歳、利回り3%）', () {
+      // 拠出: 30歳〜60歳（contributionEndAge=60）= 360ヶ月
+      // ギャップ: 60歳〜65歳（受給開始）= 60ヶ月の複利運用のみ
+      const withGap = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        contributionEndAge: 60,
+        expectedAnnualReturnRate: 3.0,
+        pensionStartAge: 65,
+      );
+      // 比較: 同じ拠出期間だがギャップなし（受給開始60歳）
+      const noGap = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        contributionEndAge: 60,
+        expectedAnnualReturnRate: 3.0,
+        pensionStartAge: 60,
+      );
+      // 両方とも拠出月数は同じ（360ヶ月）
+      expect(withGap.contributionMonths, noGap.contributionMonths);
+      expect(withGap.contributionMonths, 360);
+      // ギャップ期間の複利運用により、withGapの方がFVが大きい
+      expect(withGap.futureValue, greaterThan(noGap.futureValue));
+      // ギャップ分の倍率 = (1 + 0.0025)^60 ≈ 1.1616
+      final gapMultiplier = withGap.futureValue / noGap.futureValue;
+      expect(gapMultiplier, closeTo(1.1616, 0.01));
+    });
+
+    test('ギャップ期間あり・利回り0%の場合はFV変わらず', () {
+      // 利回り0%ではギャップ期間の複利運用は影響なし
+      const withGap = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        contributionEndAge: 60,
+        expectedAnnualReturnRate: 0.0,
+        pensionStartAge: 65,
+      );
+      const noGap = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        contributionEndAge: 60,
+        expectedAnnualReturnRate: 0.0,
+        pensionStartAge: 60,
+      );
+      // 利回り0%なので同額
+      expect(withGap.futureValue, closeTo(noGap.futureValue, 1));
+    });
+
+    test('ギャップ期間の複利運用（既存残高あり）', () {
+      // 既存残高 + 拠出 + ギャップ期間の複利
+      const withGap = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        contributionEndAge: 60,
+        expectedAnnualReturnRate: 3.0,
+        pensionStartAge: 65,
+        currentBalance: 1000000,
+      );
+      const noGap = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 30,
+        contributionEndAge: 60,
+        expectedAnnualReturnRate: 3.0,
+        pensionStartAge: 60,
+        currentBalance: 1000000,
+      );
+      // ギャップ期間の複利運用でFVが大きくなる
+      expect(withGap.futureValue, greaterThan(noGap.futureValue));
+      // 全体にギャップ倍率がかかる
+      final gapMultiplier = withGap.futureValue / noGap.futureValue;
+      expect(gapMultiplier, closeTo(1.1616, 0.01));
+    });
   });
 
   group('IdecoInput - isValid() デシジョンテーブル', () {

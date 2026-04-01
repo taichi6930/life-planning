@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/dtos/pension_by_age_data.dart';
+import '../../application/dtos/pension_form_values.dart';
 import '../../data/pension_local_storage.dart';
 import '../../domain/values/ideco_input.dart';
 import '../../domain/values/occupational_pension_input.dart';
 import '../organisms/pension_form.dart';
 import '../organisms/pension_result_display.dart';
+import '../pages/pension_table_page.dart';
 import '../providers/pension_provider.dart';
 
 /// 年金計算ページのテンプレート
@@ -60,6 +62,11 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
     notifier.setIdecoCurrentBalance(savedData.idecoCurrentBalance);
     notifier.setMonthlyLivingExpenses(savedData.monthlyLivingExpenses);
     notifier.setTargetAge(savedData.targetAge);
+    notifier.setInvestmentTrustMonthlyContribution(savedData.investmentTrustMonthlyContribution);
+    notifier.setInvestmentTrustCurrentAge(savedData.investmentTrustCurrentAge);
+    notifier.setInvestmentTrustAnnualReturnRate(savedData.investmentTrustAnnualReturnRate);
+    notifier.setInvestmentTrustWithdrawalStartAge(savedData.investmentTrustWithdrawalStartAge);
+    notifier.setInvestmentTrustCurrentBalance(savedData.investmentTrustCurrentBalance);
   }
 
   @override
@@ -104,7 +111,9 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
         ),
         // 右側：結果表示
         Expanded(
-          child: _buildResult(formState, chartData, contributionRate),
+          child: SingleChildScrollView(
+            child: _buildResult(formState, chartData, contributionRate),
+          ),
         ),
       ],
     );
@@ -155,19 +164,24 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
   }
 
   /// フォーム値を Provider に反映して計算を実行
-  void _updateAndCalculate(int age, int months, int occMonths, int salary, int bonus, int startAge, int idecoContribution, double idecoReturnRate, int idecoCurrentBalance, int livingExpenses, int targetAge) {
+  void _updateAndCalculate(PensionFormValues values) {
     final notifier = ref.read(pensionFormNotifierProvider.notifier);
-    notifier.setCurrentAge(age);
-    notifier.setPaymentMonths(months);
-    notifier.setOccupationalPaymentMonths(occMonths);
-    notifier.setMonthlySalary(salary);
-    notifier.setBonus(bonus);
-    notifier.setDesiredPensionStartAge(startAge);
-    notifier.setIdecoMonthlyContribution(idecoContribution);
-    notifier.setIdecoAnnualReturnRate(idecoReturnRate);
-    notifier.setIdecoCurrentBalance(idecoCurrentBalance);
-    notifier.setMonthlyLivingExpenses(livingExpenses);
-    notifier.setTargetAge(targetAge);
+    notifier.setCurrentAge(values.currentAge);
+    notifier.setPaymentMonths(values.paymentMonths);
+    notifier.setOccupationalPaymentMonths(values.occupationalPaymentMonths);
+    notifier.setMonthlySalary(values.monthlySalary);
+    notifier.setBonus(values.bonus);
+    notifier.setDesiredPensionStartAge(values.desiredPensionStartAge);
+    notifier.setIdecoMonthlyContribution(values.idecoMonthlyContribution);
+    notifier.setIdecoAnnualReturnRate(values.idecoAnnualReturnRate);
+    notifier.setIdecoCurrentBalance(values.idecoCurrentBalance);
+    notifier.setMonthlyLivingExpenses(values.monthlyLivingExpenses);
+    notifier.setTargetAge(values.targetAge);
+    notifier.setInvestmentTrustMonthlyContribution(values.investmentTrustMonthlyContribution);
+    notifier.setInvestmentTrustCurrentAge(values.investmentTrustCurrentAge);
+    notifier.setInvestmentTrustAnnualReturnRate(values.investmentTrustAnnualReturnRate);
+    notifier.setInvestmentTrustWithdrawalStartAge(values.investmentTrustWithdrawalStartAge);
+    notifier.setInvestmentTrustCurrentBalance(values.investmentTrustCurrentBalance);
     notifier.calculatePension();
   }
 
@@ -179,15 +193,38 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
     List<PensionByAgeData>? chartData,
     double? contributionRate,
   ) {
-    return PensionResultDisplay(
-      isLoading: formState.isLoading,
-      result: formState.result,
-      chartData: chartData,
-      contributionRate: contributionRate,
-      currentAge: formState.currentAge,
-      paymentMonths: formState.paymentMonths,
-      occupationalPaymentMonths: formState.occupationalPaymentMonths,
-      desiredPensionStartAge: formState.desiredPensionStartAge,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PensionResultDisplay(
+          isLoading: formState.isLoading,
+          result: formState.result,
+          chartData: chartData,
+          contributionRate: contributionRate,
+          currentAge: formState.currentAge,
+          paymentMonths: formState.paymentMonths,
+          occupationalPaymentMonths: formState.occupationalPaymentMonths,
+          desiredPensionStartAge: formState.desiredPensionStartAge,
+        ),
+        if (formState.result != null && chartData != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PensionTablePage(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.table_chart),
+                label: const Text('テーブルで詳細を見る'),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -208,6 +245,11 @@ class _PensionFormTemplateState extends ConsumerState<PensionFormTemplate> {
       initialIdecoCurrentBalance: formState.idecoCurrentBalance,
       initialMonthlyLivingExpenses: formState.monthlyLivingExpenses,
       initialTargetAge: formState.targetAge,
+      initialInvestmentTrustMonthlyContribution: formState.investmentTrustMonthlyContribution,
+      initialInvestmentTrustCurrentAge: formState.investmentTrustCurrentAge,
+      initialInvestmentTrustAnnualReturnRate: formState.investmentTrustAnnualReturnRate,
+      initialInvestmentTrustWithdrawalStartAge: formState.investmentTrustWithdrawalStartAge,
+      initialInvestmentTrustCurrentBalance: formState.investmentTrustCurrentBalance,
       onSubmit: _updateAndCalculate,
       onFieldChanged: _updateAndCalculate,
       maxOccupationalPaymentMonths: OccupationalPensionInput.maxEnrollmentMonths,

@@ -17,19 +17,39 @@ class PensionByAgeData {
   /// iDeCo月額（円）
   final double idecoMonthly;
 
+  /// 投資信託月額（円）
+  final double investmentTrustMonthly;
+
   /// 月額生活費（円）
   final double monthlyLivingExpenses;
+
+  /// iDeCo現在残高（円）
+  final double idecoBalance;
+
+  /// 投資信託現在残高（円）
+  final double investmentTrustBalance;
+
+  /// 当該年のiDeCo運用益（円）
+  final double idecoGain;
+
+  /// 当該年の投資信託運用益（円）
+  final double investmentTrustGain;
 
   const PensionByAgeData({
     required this.age,
     required this.basicPensionMonthly,
     required this.occupationalPensionMonthly,
     this.idecoMonthly = 0.0,
+    this.investmentTrustMonthly = 0.0,
     this.monthlyLivingExpenses = 0.0,
+    this.idecoBalance = 0.0,
+    this.investmentTrustBalance = 0.0,
+    this.idecoGain = 0.0,
+    this.investmentTrustGain = 0.0,
   });
 
-  /// 合計年金月額（基礎年金 + 厚生年金 + iDeCo）
-  double get totalMonthly => basicPensionMonthly + occupationalPensionMonthly + idecoMonthly;
+  /// 合計年金月額（基礎年金 + 厚生年金 + iDeCo + 投資信託）
+  double get totalMonthly => basicPensionMonthly + occupationalPensionMonthly + idecoMonthly + investmentTrustMonthly;
 
   /// 基礎年金年額（円）
   double get basicPensionAnnual => basicPensionMonthly * 12;
@@ -39,6 +59,9 @@ class PensionByAgeData {
 
   /// iDeCo年額（円）
   double get idecoAnnual => idecoMonthly * 12;
+
+  /// 投資信託年額（円）
+  double get investmentTrustAnnual => investmentTrustMonthly * 12;
 
   /// 合計年金年額（円）
   double get totalAnnual => totalMonthly * 12;

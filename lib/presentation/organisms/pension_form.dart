@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../application/dtos/pension_form_values.dart';
 import '../atoms/button.dart';
 import '../molecules/age_input_field.dart';
 import '../molecules/payment_months_input_field.dart';
@@ -11,8 +12,8 @@ import '../molecules/payment_months_input_field.dart';
 ///
 /// 責務: UI のみ。計算ロジックは親（Template）に委譲
 class PensionForm extends StatefulWidget {
-  final Function(int currentAge, int paymentMonths, int occupationalPaymentMonths, int monthlySalary, int bonus, int desiredPensionStartAge, int idecoMonthlyContribution, double idecoAnnualReturnRate, int idecoCurrentBalance, int monthlyLivingExpenses, int targetAge)? onSubmit;
-  final Function(int currentAge, int paymentMonths, int occupationalPaymentMonths, int monthlySalary, int bonus, int desiredPensionStartAge, int idecoMonthlyContribution, double idecoAnnualReturnRate, int idecoCurrentBalance, int monthlyLivingExpenses, int targetAge)? onFieldChanged;  // 自動計算用
+  final ValueChanged<PensionFormValues>? onSubmit;
+  final ValueChanged<PensionFormValues>? onFieldChanged;  // 自動計算用
   final bool isLoading;
   // フォーム初期値（プロバイダーから受け取る）
   final int? initialAge;
@@ -26,6 +27,11 @@ class PensionForm extends StatefulWidget {
   final int initialIdecoCurrentBalance;
   final int initialMonthlyLivingExpenses;
   final int initialTargetAge;
+  final int initialInvestmentTrustMonthlyContribution;
+  final int initialInvestmentTrustCurrentAge;
+  final double initialInvestmentTrustAnnualReturnRate;
+  final int initialInvestmentTrustWithdrawalStartAge;
+  final int initialInvestmentTrustCurrentBalance;
 
   /// 厚生年金加入月数の上限（ドメイン定数を外から渡す）
   final int maxOccupationalPaymentMonths;
@@ -48,7 +54,12 @@ class PensionForm extends StatefulWidget {
     this.initialIdecoAnnualReturnRate = 3.0,
     this.initialIdecoCurrentBalance = 0,
     this.initialMonthlyLivingExpenses = 0,
-    this.initialTargetAge = 90,
+    this.initialTargetAge = 100,
+    this.initialInvestmentTrustMonthlyContribution = 0,
+    this.initialInvestmentTrustCurrentAge = 30,
+    this.initialInvestmentTrustAnnualReturnRate = 5.0,
+    this.initialInvestmentTrustWithdrawalStartAge = 60,
+    this.initialInvestmentTrustCurrentBalance = 0,
     this.maxOccupationalPaymentMonths = 600,
     this.maxIdecoMonthlyContribution = 75000,
   });
@@ -69,6 +80,11 @@ class _PensionFormState extends State<PensionForm> {
   late int _idecoCurrentBalance;
   late int _monthlyLivingExpenses;
   late int _targetAge;
+  late int _investmentTrustMonthlyContribution;
+  late int _investmentTrustCurrentAge;
+  late double _investmentTrustAnnualReturnRate;
+  late int _investmentTrustWithdrawalStartAge;
+  late int _investmentTrustCurrentBalance;
 
   // TextEditingControllers for initial values display
   late TextEditingController _ageController;
@@ -79,6 +95,8 @@ class _PensionFormState extends State<PensionForm> {
   late TextEditingController _idecoContributionController;
   late TextEditingController _idecoCurrentBalanceController;
   late TextEditingController _livingExpensesController;
+  late TextEditingController _investmentTrustContributionController;
+  late TextEditingController _investmentTrustCurrentBalanceController;
 
   /// テキスト付きでコントローラーを生成し、カーソルを末尾に配置
   TextEditingController _createController(String text) {
@@ -111,6 +129,11 @@ class _PensionFormState extends State<PensionForm> {
     _idecoCurrentBalance = widget.initialIdecoCurrentBalance;
     _monthlyLivingExpenses = widget.initialMonthlyLivingExpenses;
     _targetAge = widget.initialTargetAge;
+    _investmentTrustMonthlyContribution = widget.initialInvestmentTrustMonthlyContribution;
+    _investmentTrustCurrentAge = widget.initialInvestmentTrustCurrentAge;
+    _investmentTrustAnnualReturnRate = widget.initialInvestmentTrustAnnualReturnRate;
+    _investmentTrustWithdrawalStartAge = widget.initialInvestmentTrustWithdrawalStartAge;
+    _investmentTrustCurrentBalance = widget.initialInvestmentTrustCurrentBalance;
     
     // Initialize controllers with default values and cursor at end
     _ageController = _createController((widget.initialAge ?? 30).toString());
@@ -121,6 +144,8 @@ class _PensionFormState extends State<PensionForm> {
     _idecoContributionController = _createController(widget.initialIdecoMonthlyContribution.toString());
     _idecoCurrentBalanceController = _createController(widget.initialIdecoCurrentBalance.toString());
     _livingExpensesController = _createController(widget.initialMonthlyLivingExpenses.toString());
+    _investmentTrustContributionController = _createController(widget.initialInvestmentTrustMonthlyContribution.toString());
+    _investmentTrustCurrentBalanceController = _createController(widget.initialInvestmentTrustCurrentBalance.toString());
     
     // 初期値で自動計算を実行
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -138,6 +163,8 @@ class _PensionFormState extends State<PensionForm> {
     _idecoContributionController.dispose();
     _idecoCurrentBalanceController.dispose();
     _livingExpensesController.dispose();
+    _investmentTrustContributionController.dispose();
+    _investmentTrustCurrentBalanceController.dispose();
     super.dispose();
   }
 
@@ -204,6 +231,27 @@ class _PensionFormState extends State<PensionForm> {
     if (oldWidget.initialTargetAge != widget.initialTargetAge) {
       setState(() => _targetAge = widget.initialTargetAge);
     }
+    if (oldWidget.initialInvestmentTrustMonthlyContribution != widget.initialInvestmentTrustMonthlyContribution) {
+      setState(() {
+        _investmentTrustMonthlyContribution = widget.initialInvestmentTrustMonthlyContribution;
+        _updateController(_investmentTrustContributionController, widget.initialInvestmentTrustMonthlyContribution.toString());
+      });
+    }
+    if (oldWidget.initialInvestmentTrustCurrentAge != widget.initialInvestmentTrustCurrentAge) {
+      setState(() => _investmentTrustCurrentAge = widget.initialInvestmentTrustCurrentAge);
+    }
+    if (oldWidget.initialInvestmentTrustAnnualReturnRate != widget.initialInvestmentTrustAnnualReturnRate) {
+      setState(() => _investmentTrustAnnualReturnRate = widget.initialInvestmentTrustAnnualReturnRate);
+    }
+    if (oldWidget.initialInvestmentTrustWithdrawalStartAge != widget.initialInvestmentTrustWithdrawalStartAge) {
+      setState(() => _investmentTrustWithdrawalStartAge = widget.initialInvestmentTrustWithdrawalStartAge);
+    }
+    if (oldWidget.initialInvestmentTrustCurrentBalance != widget.initialInvestmentTrustCurrentBalance) {
+      setState(() {
+        _investmentTrustCurrentBalance = widget.initialInvestmentTrustCurrentBalance;
+        _updateController(_investmentTrustCurrentBalanceController, widget.initialInvestmentTrustCurrentBalance.toString());
+      });
+    }
   }
 
   void _handleSubmit() {
@@ -223,7 +271,24 @@ class _PensionFormState extends State<PensionForm> {
       return;
     }
     // コールバックを呼ぶ（親に処理を委譲）
-    widget.onSubmit?.call(age, paymentMonths, occupationalPaymentMonths, monthlySalary, bonus, desiredPensionStartAge, _idecoMonthlyContribution, _idecoAnnualReturnRate, _idecoCurrentBalance, _monthlyLivingExpenses, _targetAge);
+    widget.onSubmit?.call(PensionFormValues(
+      currentAge: age,
+      paymentMonths: paymentMonths,
+      occupationalPaymentMonths: occupationalPaymentMonths,
+      monthlySalary: monthlySalary,
+      bonus: bonus,
+      desiredPensionStartAge: desiredPensionStartAge,
+      idecoMonthlyContribution: _idecoMonthlyContribution,
+      idecoAnnualReturnRate: _idecoAnnualReturnRate,
+      idecoCurrentBalance: _idecoCurrentBalance,
+      monthlyLivingExpenses: _monthlyLivingExpenses,
+      targetAge: _targetAge,
+      investmentTrustMonthlyContribution: _investmentTrustMonthlyContribution,
+      investmentTrustCurrentAge: _investmentTrustCurrentAge,
+      investmentTrustAnnualReturnRate: _investmentTrustAnnualReturnRate,
+      investmentTrustWithdrawalStartAge: _investmentTrustWithdrawalStartAge,
+      investmentTrustCurrentBalance: _investmentTrustCurrentBalance,
+    ));
   }
 
   /// フィールド値が変更されたときに親に通知
@@ -244,19 +309,24 @@ class _PensionFormState extends State<PensionForm> {
         desiredPensionStartAge == null) {
       return;
     }
-    widget.onFieldChanged?.call(
-      age,
-      paymentMonths,
-      occupationalPaymentMonths,
-      monthlySalary,
-      bonus,
-      desiredPensionStartAge,
-      _idecoMonthlyContribution,
-      _idecoAnnualReturnRate,
-      _idecoCurrentBalance,
-      _monthlyLivingExpenses,
-      _targetAge,
-    );
+    widget.onFieldChanged?.call(PensionFormValues(
+      currentAge: age,
+      paymentMonths: paymentMonths,
+      occupationalPaymentMonths: occupationalPaymentMonths,
+      monthlySalary: monthlySalary,
+      bonus: bonus,
+      desiredPensionStartAge: desiredPensionStartAge,
+      idecoMonthlyContribution: _idecoMonthlyContribution,
+      idecoAnnualReturnRate: _idecoAnnualReturnRate,
+      idecoCurrentBalance: _idecoCurrentBalance,
+      monthlyLivingExpenses: _monthlyLivingExpenses,
+      targetAge: _targetAge,
+      investmentTrustMonthlyContribution: _investmentTrustMonthlyContribution,
+      investmentTrustCurrentAge: _investmentTrustCurrentAge,
+      investmentTrustAnnualReturnRate: _investmentTrustAnnualReturnRate,
+      investmentTrustWithdrawalStartAge: _investmentTrustWithdrawalStartAge,
+      investmentTrustCurrentBalance: _investmentTrustCurrentBalance,
+    ));
   }
 
   @override
@@ -510,7 +580,7 @@ class _PensionFormState extends State<PensionForm> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 suffix: const Text('円'),
-                helperText: '年金で賄えない分をiDeCoで補填します',
+                helperText: '年金で賄えない分をiDeCo・投資信託で補填します',
                 helperMaxLines: 2,
               ),
               keyboardType: TextInputType.number,
@@ -560,6 +630,149 @@ class _PensionFormState extends State<PensionForm> {
                 ),
                 Text(
                   'iDeCoの積立金がこの年齢まで持つか判定します',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            // === 投資信託 セクション ===
+            Divider(color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              '投資信託',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.orange[800],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // 投資信託 月額積立額
+            TextField(
+              controller: _investmentTrustContributionController,
+              decoration: InputDecoration(
+                labelText: '投資信託 月額積立額',
+                hintText: '例: 30000（積み立てない場合は0）',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffix: const Text('円'),
+                helperText: '毎月の積立額（上限なし）',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                final amount = int.tryParse(value);
+                if (amount != null && amount >= 0) {
+                  setState(() {
+                    _investmentTrustMonthlyContribution = amount;
+                    _notifyFieldChange();
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+            // 投資信託 現在の残高
+            TextField(
+              controller: _investmentTrustCurrentBalanceController,
+              decoration: InputDecoration(
+                labelText: '投資信託 現在の残高',
+                hintText: '例: 500000（新規の場合は0）',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffix: const Text('円'),
+                helperText: '既に保有している投資信託の現在評価額',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                final amount = int.tryParse(value);
+                if (amount != null && amount >= 0) {
+                  setState(() {
+                    _investmentTrustCurrentBalance = amount;
+                    _notifyFieldChange();
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+            // 投資信託 想定利回りスライダー
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '投資信託 想定利回り',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    Text(
+                      '${_investmentTrustAnnualReturnRate.toStringAsFixed(1)}%',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.orange[800],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: _investmentTrustAnnualReturnRate,
+                  min: 0.0,
+                  max: 10.0,
+                  divisions: 100,
+                  activeColor: Colors.orange,
+                  onChanged: (value) {
+                    setState(() {
+                      _investmentTrustAnnualReturnRate = double.parse(value.toStringAsFixed(1));
+                      _notifyFieldChange();
+                    });
+                  },
+                ),
+                Text(
+                  '0%: 元本保証型 / 3%: バランス型 / 5%以上: 株式中心（S&P500等）',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // 投資信託 引出開始年齢スライダー
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '投資信託 引出開始年齢',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    Text(
+                      '$_investmentTrustWithdrawalStartAge歳',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.orange[800],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: _investmentTrustWithdrawalStartAge.toDouble(),
+                  min: 30,
+                  max: 75,
+                  divisions: 45,
+                  activeColor: Colors.orange,
+                  onChanged: (value) {
+                    setState(() {
+                      _investmentTrustWithdrawalStartAge = value.toInt();
+                      _notifyFieldChange();
+                    });
+                  },
+                ),
+                Text(
+                  '60歳以上: 公的年金開始まで生活費を全額補填 / 60歳未満: 年金不足分を補填',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                   ),

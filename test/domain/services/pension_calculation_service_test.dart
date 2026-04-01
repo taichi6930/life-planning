@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:life_planning/domain/services/pension_calculation_service.dart';
 import 'package:life_planning/domain/values/ideco_input.dart';
+import 'package:life_planning/domain/values/investment_trust_input.dart';
 import 'package:life_planning/domain/values/national_pension_input.dart';
 import 'package:life_planning/domain/values/occupational_pension_input.dart';
 
@@ -590,7 +591,7 @@ void main() {
       final result = PensionCalculationService.calculateIdeco(
         input,
         monthlyLivingExpenses: 200000,
-        targetAge: 90,
+        targetAge: 100,
       );
 
       // 基礎年金・厚生年金は0
@@ -601,7 +602,7 @@ void main() {
       expect(result.idecoFutureValue, greaterThan(0));
       expect(result.idecoExhaustionAge, greaterThan(65));
       expect(result.monthlyLivingExpenses, 200000);
-      expect(result.targetAge, 90);
+      expect(result.targetAge, 100);
     });
 
     test('calculateIdeco: 生活費未指定の場合は不足分0', () {
@@ -650,7 +651,7 @@ void main() {
         occupationalInput,
         idecoInput,
         monthlyLivingExpenses: 300000,
-        targetAge: 90,
+        targetAge: 100,
       );
 
       // 基礎年金と厚生年金は正の値
@@ -665,7 +666,7 @@ void main() {
       expect(result.idecoExhaustionAge, lessThan(66));
       expect(result.isIdecoSufficient, isFalse);
       expect(result.idecoFutureValue, greaterThan(0));
-      expect(result.targetAge, 90);
+      expect(result.targetAge, 100);
     });
 
     test('calculateCombinedPensionWithIdeco: Phase 1を生き残り2段階モデルがPhase 2まで継続', () {
@@ -693,7 +694,7 @@ void main() {
         occupationalInput,
         idecoInput,
         monthlyLivingExpenses: 300000,
-        targetAge: 90,
+        targetAge: 100,
       );
 
       // 基礎年金と厚生年金は正の値
@@ -706,7 +707,7 @@ void main() {
       expect(result.idecoExhaustionAge, greaterThan(65));
       expect(result.idecoMonthly, closeTo(300000 - publicPension, 1.0));
       expect(result.idecoFutureValue, greaterThan(0));
-      expect(result.targetAge, 90);
+      expect(result.targetAge, 100);
     });
 
     test('calculateNationalPensionWithIdeco: 基礎+iDeCo（厚生なし、2段階モデル）', () {
@@ -727,7 +728,7 @@ void main() {
         nationalInput,
         idecoInput,
         monthlyLivingExpenses: 200000,
-        targetAge: 90,
+        targetAge: 100,
       );
 
       // 厚生年金は0
@@ -739,6 +740,227 @@ void main() {
       // Phase 1（60〜65歳）を越え、Phase 2で不足分を補填→枯渇年齢は65歳以降
       expect(result.idecoExhaustionAge, greaterThan(65));
       expect(result.idecoFutureValue, greaterThan(0));
+    });
+  });
+
+  group('複合年金+iDeCo+投資信託テスト', () {
+    test('calculateCombinedPensionWithIdecoAndInvestmentTrust: 基礎+厚生+iDeCo+投資信託', () {
+      // iDeCo: 25歳、月23,000円、年利3% → FV≈13.4M
+      // IT: 30歳、月30,000円、年利5%、引出55歳 → FV≈17.8M
+      // 生活費30万円、年金65歳、想定寿命90歳
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      final occupationalInput = OccupationalPensionInput(
+        enrollmentMonths: 480,
+        averageMonthlyReward: 300000,
+        averageBonusReward: 500000,
+        desiredPensionStartAge: 65,
+      );
+      const idecoInput = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 25,
+        expectedAnnualReturnRate: 3.0,
+      );
+      const itInput = InvestmentTrustInput(
+        monthlyContribution: 30000,
+        currentAge: 30,
+        withdrawalStartAge: 55,
+        expectedAnnualReturnRate: 5.0,
+      );
+
+      final result = PensionCalculationService
+          .calculateCombinedPensionWithIdecoAndInvestmentTrust(
+        nationalInput,
+        occupationalInput,
+        idecoInput,
+        itInput,
+        monthlyLivingExpenses: 300000,
+        targetAge: 100,
+      );
+
+      // 基礎年金と厚生年金は正の値
+      expect(result.basicPensionMonthly, greaterThan(0));
+      expect(result.occupationalPensionMonthly, greaterThan(0));
+      // iDeCoは正のFV
+      expect(result.idecoFutureValue, greaterThan(0));
+      // 投資信託も正のFV
+      expect(result.investmentTrustFutureValue, greaterThan(0));
+      // 生活費とtargetAge
+      expect(result.monthlyLivingExpenses, 300000);
+      expect(result.targetAge, 100);
+      // Phase 2不足分 = 生活費 - 公的年金
+      final publicPension =
+          result.basicPensionMonthly + result.occupationalPensionMonthly;
+      expect(result.monthlyShortfall, closeTo(300000 - publicPension, 0.01));
+    });
+
+    test('calculateNationalPensionWithIdecoAndInvestmentTrust: 基礎+iDeCo+投資信託（厚生なし）',
+        () {
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      const idecoInput = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 25,
+        expectedAnnualReturnRate: 3.0,
+      );
+      const itInput = InvestmentTrustInput(
+        monthlyContribution: 30000,
+        currentAge: 30,
+        withdrawalStartAge: 55,
+        expectedAnnualReturnRate: 5.0,
+      );
+
+      final result = PensionCalculationService
+          .calculateNationalPensionWithIdecoAndInvestmentTrust(
+        nationalInput,
+        idecoInput,
+        itInput,
+        monthlyLivingExpenses: 200000,
+        targetAge: 100,
+      );
+
+      // 厚生年金は0
+      expect(result.occupationalPensionMonthly, 0.0);
+      // 基礎年金は正の値
+      expect(result.basicPensionMonthly, greaterThan(0));
+      // iDeCo FV > 0
+      expect(result.idecoFutureValue, greaterThan(0));
+      // IT FV > 0
+      expect(result.investmentTrustFutureValue, greaterThan(0));
+    });
+
+    test('iDeCoが年金受給後に枯渇（Case B）: ITがiDeCo枯渇後に補填', () {
+      // iDeCo FV が小さく Phase 2 で枯渇するケース
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      final occupationalInput = OccupationalPensionInput(
+        enrollmentMonths: 480,
+        averageMonthlyReward: 300000,
+        averageBonusReward: 500000,
+        desiredPensionStartAge: 65,
+      );
+      // iDeCo: 小さめで早期に枯渇するケース
+      const idecoInput = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 25,
+        expectedAnnualReturnRate: 3.0,
+      );
+      // IT: 大きめの投資信託で長期カバー
+      const itInput = InvestmentTrustInput(
+        monthlyContribution: 50000,
+        currentAge: 25,
+        withdrawalStartAge: 55,
+        expectedAnnualReturnRate: 5.0,
+      );
+
+      final result = PensionCalculationService
+          .calculateCombinedPensionWithIdecoAndInvestmentTrust(
+        nationalInput,
+        occupationalInput,
+        idecoInput,
+        itInput,
+        monthlyLivingExpenses: 300000,
+        targetAge: 100,
+      );
+
+      // iDeCoが有限期間で枯渇する場合、投資信託が補填
+      if (result.idecoExhaustionAge > 0 &&
+          result.idecoExhaustionAge != double.infinity) {
+        // 投資信託の補填額は不足分
+        expect(result.investmentTrustMonthly, result.monthlyShortfall);
+        // 投資信託の枯渇年齢はiDeCo枯渇後
+        expect(result.investmentTrustExhaustionAge,
+            greaterThan(result.idecoExhaustionAge));
+      }
+    });
+
+    test('iDeCoが永久に持つ場合: IT補填不要', () {
+      // iDeCo: 非常に大きなFVで永久に持つケース
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      final occupationalInput = OccupationalPensionInput(
+        enrollmentMonths: 480,
+        averageMonthlyReward: 300000,
+        averageBonusReward: 500000,
+        desiredPensionStartAge: 65,
+      );
+      // iDeCo: 大きな拠出額で運用益が引出額を超える → 永久に持つ
+      const idecoInput = IdecoInput(
+        monthlyContribution: 68000,
+        currentAge: 25,
+        expectedAnnualReturnRate: 5.0,
+      );
+      const itInput = InvestmentTrustInput(
+        monthlyContribution: 30000,
+        currentAge: 30,
+        withdrawalStartAge: 55,
+        expectedAnnualReturnRate: 5.0,
+      );
+
+      final result = PensionCalculationService
+          .calculateCombinedPensionWithIdecoAndInvestmentTrust(
+        nationalInput,
+        occupationalInput,
+        idecoInput,
+        itInput,
+        monthlyLivingExpenses: 200000,
+        targetAge: 100,
+      );
+
+      // iDeCoが永久に持つ場合
+      if (result.idecoExhaustionAge == double.infinity) {
+        // 投資信託の補填は不要
+        expect(result.investmentTrustMonthly, 0.0);
+        expect(result.isInvestmentTrustSufficient, isTrue);
+      }
+    });
+
+    test('IT引出開始55歳: Step 1(55→60)でITが生活費カバー後、iDeCoに引き継ぐ', () {
+      // IT引出開始=55歳、iDeCo開始=60歳 → Step 1で5年間ITが生活費カバー
+      final nationalInput = NationalPensionInput(
+        fullContribution: 480,
+        desiredPensionStartAge: 65,
+        hasPaymentSuspension: false,
+      );
+      const idecoInput = IdecoInput(
+        monthlyContribution: 23000,
+        currentAge: 25,
+        expectedAnnualReturnRate: 3.0,
+      );
+      const itInput = InvestmentTrustInput(
+        monthlyContribution: 30000,
+        currentAge: 25,
+        withdrawalStartAge: 55,
+        expectedAnnualReturnRate: 5.0,
+      );
+
+      final result = PensionCalculationService
+          .calculateNationalPensionWithIdecoAndInvestmentTrust(
+        nationalInput,
+        idecoInput,
+        itInput,
+        monthlyLivingExpenses: 200000,
+        targetAge: 100,
+      );
+
+      // 両方のFVが正
+      expect(result.idecoFutureValue, greaterThan(0));
+      expect(result.investmentTrustFutureValue, greaterThan(0));
+      // iDeCoはPhase 1b(60→65)を経てPhase 2で不足分補填
+      // iDeCoの枯渇年齢は60歳以降
+      expect(result.idecoExhaustionAge, greaterThanOrEqualTo(60));
     });
   });
 }

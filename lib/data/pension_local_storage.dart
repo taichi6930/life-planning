@@ -28,6 +28,16 @@ class PensionStorage {
   static const String _keyMonthlyLivingExpenses =
       'pension_monthly_living_expenses';
   static const String _keyTargetAge = 'pension_target_age';
+  static const String _keyInvestmentTrustMonthlyContribution =
+      'pension_investment_trust_monthly_contribution';
+  static const String _keyInvestmentTrustCurrentAge =
+      'pension_investment_trust_current_age';
+  static const String _keyInvestmentTrustAnnualReturnRate =
+      'pension_investment_trust_annual_return_rate';
+  static const String _keyInvestmentTrustWithdrawalStartAge =
+      'pension_investment_trust_withdrawal_start_age';
+  static const String _keyInvestmentTrustCurrentBalance =
+      'pension_investment_trust_current_balance';
 
   /// フォーム入力値を localStorage に保存
   static Future<void> savePensionFormData({
@@ -42,6 +52,11 @@ class PensionStorage {
     int? idecoCurrentBalance,
     int? monthlyLivingExpenses,
     int? targetAge,
+    int? investmentTrustMonthlyContribution,
+    int? investmentTrustCurrentAge,
+    double? investmentTrustAnnualReturnRate,
+    int? investmentTrustWithdrawalStartAge,
+    int? investmentTrustCurrentBalance,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -79,6 +94,25 @@ class PensionStorage {
     if (targetAge != null) {
       await prefs.setInt(_keyTargetAge, targetAge);
     }
+    if (investmentTrustMonthlyContribution != null) {
+      await prefs.setInt(_keyInvestmentTrustMonthlyContribution,
+          investmentTrustMonthlyContribution);
+    }
+    if (investmentTrustCurrentAge != null) {
+      await prefs.setInt(_keyInvestmentTrustCurrentAge, investmentTrustCurrentAge);
+    }
+    if (investmentTrustAnnualReturnRate != null) {
+      await prefs.setDouble(
+          _keyInvestmentTrustAnnualReturnRate, investmentTrustAnnualReturnRate);
+    }
+    if (investmentTrustWithdrawalStartAge != null) {
+      await prefs.setInt(
+          _keyInvestmentTrustWithdrawalStartAge, investmentTrustWithdrawalStartAge);
+    }
+    if (investmentTrustCurrentBalance != null) {
+      await prefs.setInt(
+          _keyInvestmentTrustCurrentBalance, investmentTrustCurrentBalance);
+    }
   }
 
   /// localStorage からフォーム入力値を取得
@@ -102,7 +136,17 @@ class PensionStorage {
       monthlyLivingExpenses:
           prefs.getInt(_keyMonthlyLivingExpenses) ?? 0,
       targetAge:
-          prefs.getInt(_keyTargetAge) ?? 90,
+          prefs.getInt(_keyTargetAge) ?? 100,
+      investmentTrustMonthlyContribution:
+          prefs.getInt(_keyInvestmentTrustMonthlyContribution) ?? 0,
+      investmentTrustCurrentAge:
+          prefs.getInt(_keyInvestmentTrustCurrentAge) ?? 30,
+      investmentTrustAnnualReturnRate:
+          prefs.getDouble(_keyInvestmentTrustAnnualReturnRate) ?? 5.0,
+      investmentTrustWithdrawalStartAge:
+          prefs.getInt(_keyInvestmentTrustWithdrawalStartAge) ?? 60,
+      investmentTrustCurrentBalance:
+          prefs.getInt(_keyInvestmentTrustCurrentBalance) ?? 0,
     );
   }
 
@@ -120,5 +164,10 @@ class PensionStorage {
     await prefs.remove(_keyIdecoCurrentBalance);
     await prefs.remove(_keyMonthlyLivingExpenses);
     await prefs.remove(_keyTargetAge);
+    await prefs.remove(_keyInvestmentTrustMonthlyContribution);
+    await prefs.remove(_keyInvestmentTrustCurrentAge);
+    await prefs.remove(_keyInvestmentTrustAnnualReturnRate);
+    await prefs.remove(_keyInvestmentTrustWithdrawalStartAge);
+    await prefs.remove(_keyInvestmentTrustCurrentBalance);
   }
 }

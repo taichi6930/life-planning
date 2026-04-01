@@ -73,9 +73,39 @@ class PensionResult {
   /// false: 枯渇年齢 < 想定寿命（足りない）
   final bool isIdecoSufficient;
 
+  /// 投資信託月額（円）
+  ///
+  /// 投資信託からの月額引出額。不足分補填モデルでは、
+  /// 生活費 - 公的年金（※iDeCo補填後）の不足分に相当する。
+  /// 加入なし or 不足分なしの場合は0.0
+  final double investmentTrustMonthly;
+
+  /// 投資信託年額（円）
+  ///
+  /// investmentTrustMonthly × 12
+  final double investmentTrustAnnual;
+
+  /// 投資信託積立将来価値（円）
+  ///
+  /// 拠出終了時点での積立総額（複利運用後）
+  final double investmentTrustFutureValue;
+
+  /// 投資信託枯渇年齢
+  ///
+  /// 投資信託の積立金が底をつく年齢（小数点あり）。
+  /// 不足分がない場合や投資信託なしの場合は0.0
+  final double investmentTrustExhaustionAge;
+
+  /// 投資信託充足判定
+  ///
+  /// 投資信託の積立金が想定寿命まで持つかどうか。
+  /// true: 枯渇年齢 >= 想定寿命（足りる）
+  /// false: 枯渇年齢 < 想定寿命（足りない）
+  final bool isInvestmentTrustSufficient;
+
   /// 合計年金月額（円）
   ///
-  /// basicPensionMonthly + occupationalPensionMonthly + idecoMonthly
+  /// basicPensionMonthly + occupationalPensionMonthly + idecoMonthly + investmentTrustMonthly
   final double totalPensionMonthly;
 
   /// 合計年金年額（円）
@@ -105,8 +135,13 @@ class PensionResult {
     this.monthlyShortfall = 0.0,
     this.idecoFutureValue = 0.0,
     this.idecoExhaustionAge = 0.0,
-    this.targetAge = 90,
+    this.targetAge = 100,
     this.isIdecoSufficient = true,
+    this.investmentTrustMonthly = 0.0,
+    this.investmentTrustAnnual = 0.0,
+    this.investmentTrustFutureValue = 0.0,
+    this.investmentTrustExhaustionAge = 0.0,
+    this.isInvestmentTrustSufficient = true,
     required this.totalPensionMonthly,
     required this.totalPensionAnnual,
     required this.adjustmentRate,
@@ -131,7 +166,8 @@ class PensionResult {
     final adjustmentLabel = adjustmentRate < 1.0 ? '繰上げ' : adjustmentRate > 1.0 ? '繰下げ' : '標準';
     final adjustmentPercent = ((adjustmentRate - 1.0) * 100).toStringAsFixed(1);
     final shortfallLabel = monthlyShortfall > 0 ? '不足' : '余裕';
-    final sufficientLabel = isIdecoSufficient ? '足りる' : '足りない';
+    final idecoSufficientLabel = isIdecoSufficient ? '足りる' : '足りない';
+    final itSufficientLabel = isInvestmentTrustSufficient ? '足りる' : '足りない';
     
     return '''
 ┌─────────────────────────────────────────────┐
@@ -148,6 +184,9 @@ class PensionResult {
 │                                             │
 │ iDeCo（月額）: ¥${idecoMonthly.toStringAsFixed(0)}  │
 │ iDeCo（年額）: ¥${idecoAnnual.toStringAsFixed(0)}  │
+│                                             │
+│ 投資信託（月額）: ¥${investmentTrustMonthly.toStringAsFixed(0)}  │
+│ 投資信託（年額）: ¥${investmentTrustAnnual.toStringAsFixed(0)}  │
 ├─────────────────────────────────────────────┤
 │ 合計（月額）: ¥${totalPensionMonthly.toStringAsFixed(0)}  │
 │ 合計（年額）: ¥${totalPensionAnnual.toStringAsFixed(0)}  │
@@ -156,8 +195,11 @@ class PensionResult {
 │ 月額$shortfallLabel: ¥${monthlyShortfall.abs().toStringAsFixed(0)}  │
 │ iDeCo積立額: ¥${idecoFutureValue.toStringAsFixed(0)}  │
 │ iDeCo枯渇年齢: ${idecoExhaustionAge.toStringAsFixed(1)}歳  │
+│ iDeCo判定: $idecoSufficientLabel                    │
+│ 投資信託積立額: ¥${investmentTrustFutureValue.toStringAsFixed(0)}  │
+│ 投資信託枯渇年齢: ${investmentTrustExhaustionAge.toStringAsFixed(1)}歳  │
+│ 投資信託判定: $itSufficientLabel                    │
 │ 想定寿命: $targetAge歳                       │
-│ 判定: $sufficientLabel                       │
 └─────────────────────────────────────────────┘
 ''';
   }
@@ -177,6 +219,11 @@ class PensionResult {
   idecoExhaustionAge: $idecoExhaustionAge,
   targetAge: $targetAge,
   isIdecoSufficient: $isIdecoSufficient,
+  investmentTrustMonthly: $investmentTrustMonthly,
+  investmentTrustAnnual: $investmentTrustAnnual,
+  investmentTrustFutureValue: $investmentTrustFutureValue,
+  investmentTrustExhaustionAge: $investmentTrustExhaustionAge,
+  isInvestmentTrustSufficient: $isInvestmentTrustSufficient,
   totalPensionMonthly: $totalPensionMonthly,
   totalPensionAnnual: $totalPensionAnnual,
   adjustmentRate: $adjustmentRate,
@@ -200,6 +247,11 @@ class PensionResult {
         other.idecoExhaustionAge == idecoExhaustionAge &&
         other.targetAge == targetAge &&
         other.isIdecoSufficient == isIdecoSufficient &&
+        other.investmentTrustMonthly == investmentTrustMonthly &&
+        other.investmentTrustAnnual == investmentTrustAnnual &&
+        other.investmentTrustFutureValue == investmentTrustFutureValue &&
+        other.investmentTrustExhaustionAge == investmentTrustExhaustionAge &&
+        other.isInvestmentTrustSufficient == isInvestmentTrustSufficient &&
         other.totalPensionMonthly == totalPensionMonthly &&
         other.totalPensionAnnual == totalPensionAnnual &&
         other.adjustmentRate == adjustmentRate &&
@@ -208,7 +260,7 @@ class PensionResult {
 
   @override
   int get hashCode {
-    return Object.hash(
+    return Object.hashAll([
       basicPensionMonthly,
       basicPensionAnnual,
       occupationalPensionMonthly,
@@ -221,10 +273,15 @@ class PensionResult {
       idecoExhaustionAge,
       targetAge,
       isIdecoSufficient,
+      investmentTrustMonthly,
+      investmentTrustAnnual,
+      investmentTrustFutureValue,
+      investmentTrustExhaustionAge,
+      isInvestmentTrustSufficient,
       totalPensionMonthly,
       totalPensionAnnual,
       adjustmentRate,
       pensionStartAge,
-    );
+    ]);
   }
 }

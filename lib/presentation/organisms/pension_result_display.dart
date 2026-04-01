@@ -64,7 +64,9 @@ class PensionResultDisplay extends StatelessWidget {
     // 表示用の文字列整形（Widget 層で実施）
     final hasOccupationalPension = r.occupationalPensionMonthly > 0;
     final hasIdecoPension = r.idecoMonthly > 0;
-    final hasShortfallAnalysis = r.monthlyLivingExpenses > 0 && r.idecoFutureValue > 0;
+    final hasInvestmentTrustPension = r.investmentTrustMonthly > 0;
+    final hasShortfallAnalysis = r.monthlyLivingExpenses > 0 &&
+        (r.idecoFutureValue > 0 || r.investmentTrustFutureValue > 0);
     final rateText = rate != null ? '${(rate * 100).toStringAsFixed(1)}%' : '-';
 
     return SingleChildScrollView(
@@ -118,6 +120,20 @@ class PensionResultDisplay extends StatelessWidget {
                 },
               ),
             ],
+            if (hasInvestmentTrustPension) ...[
+              const SizedBox(height: 16),
+              ResultCard(
+                title: '投資信託 不足分補填',
+                results: {
+                  '投資信託積立額': '¥${r.investmentTrustFutureValue.toStringAsFixed(0)}',
+                  '月額引出額': '¥${r.investmentTrustMonthly.toStringAsFixed(0)}',
+                },
+                units: const {
+                  '投資信託積立額': '円',
+                  '月額引出額': '円',
+                },
+              ),
+            ],
             if (hasShortfallAnalysis) ...[
               const SizedBox(height: 16),
               ResultCard(
@@ -126,9 +142,15 @@ class PensionResultDisplay extends StatelessWidget {
                   '月額生活費': '¥${r.monthlyLivingExpenses.toStringAsFixed(0)}',
                   '公的年金月額': '¥${r.publicPensionMonthly.toStringAsFixed(0)}',
                   '月額不足分': '¥${r.monthlyShortfall.toStringAsFixed(0)}',
-                  'iDeCo枯渇年齢': r.idecoExhaustionAge.isInfinite ? '生涯枯渇なし' : '${r.idecoExhaustionAge.toStringAsFixed(1)}歳',
+                  if (r.idecoFutureValue > 0)
+                    'iDeCo枯渇年齢': r.idecoExhaustionAge.isInfinite ? '生涯枯渇なし' : '${r.idecoExhaustionAge.toStringAsFixed(1)}歳',
+                  if (r.investmentTrustFutureValue > 0)
+                    '投資信託枯渇年齢': r.investmentTrustExhaustionAge.isInfinite ? '生涯枯渇なし' : '${r.investmentTrustExhaustionAge.toStringAsFixed(1)}歳',
                   '想定寿命': '${r.targetAge}歳',
-                  '判定': r.isIdecoSufficient ? '✅ 足りる' : '❌ 足りない',
+                  if (r.idecoFutureValue > 0)
+                    'iDeCo判定': r.isIdecoSufficient ? '✅ 足りる' : '❌ 足りない',
+                  if (r.investmentTrustFutureValue > 0)
+                    '投資信託判定': r.isInvestmentTrustSufficient ? '✅ 足りる' : '❌ 足りない',
                 },
                 units: const {
                   '月額生活費': '円',

@@ -53,7 +53,11 @@ class PensionAgeChart extends StatelessWidget {
       final ageIndex = data!.indexOf(d);
       final basicAnnual = d.basicPensionAnnual;
       final occupationalAnnual = d.occupationalPensionAnnual;
+      final idecoAnnual = d.idecoAnnual;
+      final investmentTrustAnnual = d.investmentTrustAnnual;
       final totalAnnual = d.totalAnnual;
+      final base2 = basicAnnual + occupationalAnnual;
+      final base3 = base2 + idecoAnnual;
       return BarChartGroupData(
         x: ageIndex,
         barRods: [
@@ -63,8 +67,10 @@ class PensionAgeChart extends StatelessWidget {
             width: 16,
             rodStackItems: [
               BarChartRodStackItem(0, basicAnnual, Colors.blue),
-              BarChartRodStackItem(basicAnnual, basicAnnual + occupationalAnnual, Colors.orange),
-              BarChartRodStackItem(basicAnnual + occupationalAnnual, totalAnnual, Colors.green),
+              BarChartRodStackItem(basicAnnual, base2, Colors.orange),
+              BarChartRodStackItem(base2, base3, Colors.green),
+              if (investmentTrustAnnual > 0)
+                BarChartRodStackItem(base3, base3 + investmentTrustAnnual, Colors.deepPurple),
             ],
           ),
         ],
@@ -89,7 +95,7 @@ class PensionAgeChart extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '60歳からの年金額を表示します（受給開始年齢前は0円）',
+            '${data!.first.age}歳からの年金額を表示します（受給開始年齢前は0円）',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.grey[600],
             ),
@@ -134,6 +140,9 @@ class PensionAgeChart extends StatelessWidget {
                       if (d.idecoMonthly > 0) {
                         tooltipText += '\niDeCo: ¥${d.idecoAnnual.toStringAsFixed(0)}';
                       }
+                      if (d.investmentTrustMonthly > 0) {
+                        tooltipText += '\n投資信託: ¥${d.investmentTrustAnnual.toStringAsFixed(0)}';
+                      }
                       tooltipText += '\n合計: ¥${d.totalAnnual.toStringAsFixed(0)}';
                       
                       return BarTooltipItem(
@@ -154,10 +163,15 @@ class PensionAgeChart extends StatelessWidget {
                         if (index < 0 || index >= data!.length) {
                           return const Text('');
                         }
-                        return Text(
-                          '${data![index].age}',
-                          style: const TextStyle(fontSize: 10),
-                        );
+                        final age = data![index].age;
+                        // 5年刻みで表示
+                        if (age % 5 == 0) {
+                          return Text(
+                            '$age',
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        }
+                        return const Text('');
                       },
                       reservedSize: 30,
                     ),
@@ -196,18 +210,16 @@ class PensionAgeChart extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // レジェンド
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
               _buildLegendItem(Colors.blue, '基礎年金'),
-              const SizedBox(width: 24),
               _buildLegendItem(Colors.orange, '厚生年金'),
-              const SizedBox(width: 24),
               _buildLegendItem(Colors.green, 'iDeCo'),
-              if (hasLivingExpenses) ...[
-                const SizedBox(width: 24),
+              _buildLegendItem(Colors.deepPurple, '投資信託'),
+              if (hasLivingExpenses)
                 _buildLegendItem(Colors.red, '生活費'),
-              ],
             ],
           ),
           const SizedBox(height: 8),
